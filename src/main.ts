@@ -8,7 +8,9 @@ import {SemVer} from './internal/SemVer'
 async function run(): Promise<void> {
     try {
         core.info(`1-rc-1: ${SemVer.parse('1-rc-1').suffixTokens.join(', ')}`)
-        core.info(`1-rc1: ${SemVer.parse('1-rc-1').suffixTokens.join(', ')}`)
+        core.info(`1-rc1: ${SemVer.parse('1-rc1').suffixTokens.join(', ')}`)
+        core.info(`1-rc: ${SemVer.parse('1-rc').suffixTokens.join(', ')}`)
+        core.info(`1-1: ${SemVer.parse('1-1').suffixTokens.join(', ')}`)
 
         const httpClient = new HttpClient()
         try {
