@@ -2,6 +2,74 @@ module.exports =
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
+/***/ 676:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.VersionParsingException = exports.SemVer = void 0;
+class SemVer {
+    constructor(version, numbers, suffix, suffixTokens) {
+        this.version = version;
+        this.numbers = [...numbers];
+        this.suffix = suffix;
+        this.suffixTokens = [...suffixTokens];
+    }
+    static parse(versionObject) {
+        if (versionObject == null) {
+            throw new VersionParsingException('Version must not be null or undefined');
+        }
+        const version = versionObject.toString().trim();
+        if (!version) {
+            throw new VersionParsingException('Version must not be empty');
+        }
+        const matches = SemVer.VERSION_REGEX.exec(version);
+        if (!matches) {
+            throw new VersionParsingException(`Version doesn't match ${SemVer.VERSION_REGEX} pattern: ${version}`);
+        }
+        const numbers = matches.groups.numbers.split(/[^\d]+/).map(str => parseInt(str));
+        const suffix = matches.groups.suffix;
+        const suffixLower = suffix === null || suffix === void 0 ? void 0 : suffix.toLowerCase();
+        if (!suffixLower) {
+            return new SemVer(version, numbers, '', []);
+        }
+        const suffixTokens = [];
+        return new SemVer(version, numbers, suffix, suffixTokens);
+    }
+}
+exports.SemVer = SemVer;
+SemVer.VERSION_REGEX = /^(?<numbers>\d+(\.\d+)*)([-._+](?<suffix>.+))?$/;
+SemVer.SUFFIX_DELIMITER_REGEX = /([^a-z0-9]+)|(d+)/ig;
+SemVer.SUFFIX_TOKEN_ORDERS = {
+    sp: 2,
+    r: 1,
+    release: 1,
+    ga: 1,
+    final: 1,
+    snapshot: -1,
+    nightly: -2,
+    rc: -2,
+    cr: -2,
+    milestone: -3,
+    m: -3,
+    beta: -4,
+    b: -4,
+    alpha: -5,
+    a: -5,
+    dev: -6,
+    pr: -6,
+};
+class VersionParsingException extends Error {
+    constructor(message) {
+        super(message);
+    }
+}
+exports.VersionParsingException = VersionParsingException;
+
+
+/***/ }),
+
 /***/ 538:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -39,13 +107,16 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(186));
 const http_client_1 = __nccwpck_require__(925);
 const ts_retry_promise_1 = __nccwpck_require__(711);
+const SemVer_1 = __nccwpck_require__(676);
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
+            core.info(`1-rc-1: ${SemVer_1.SemVer.parse('1-rc-1').suffixTokens.join(', ')}`);
+            core.info(`1-rc1: ${SemVer_1.SemVer.parse('1-rc-1').suffixTokens.join(', ')}`);
             const httpClient = new http_client_1.HttpClient();
             try {
-                const versions = yield ts_retry_promise_1.retry(() => httpClient.getJson('https://services.gradle.org/versions/all', {
+                const gradleVersions = yield ts_retry_promise_1.retry(() => httpClient.getJson('https://services.gradle.org/versions/all', {
                     Accept: 'application/json',
                 })
                     .then(response => {
@@ -59,8 +130,26 @@ function run() {
                     retries: 3,
                     delay: 5000,
                 });
-                for (const version of versions) {
-                    core.info(JSON.stringify(version, null, 2));
+                const minVersion = SemVer_1.SemVer.parse(core.getInput('minVersion'));
+                let rcVersion = undefined;
+                const releaseVersions = [];
+                for (const gradleVersion of gradleVersions) {
+                    if (gradleVersion.broken
+                        || gradleVersion.snapshot
+                        || gradleVersion.nightly
+                        || gradleVersion.releaseNightly
+                        || gradleVersion.milestoneFor) {
+                        continue;
+                    }
+                    const version = SemVer_1.SemVer.parse(gradleVersion.version);
+                    if (!rcVersion && gradleVersion.activeRc) {
+                        rcVersion = version;
+                    }
+                    if (gradleVersion.rcFor
+                        || version.suffix) {
+                        continue;
+                    }
+                    releaseVersions.push(version);
                 }
             }
             finally {

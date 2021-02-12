@@ -4,7 +4,7 @@ export class SemVer {
 
     private static readonly VERSION_REGEX = /^(?<numbers>\d+(\.\d+)*)([-._+](?<suffix>.+))?$/
 
-    private static readonly SUFFIX_DELIMITER_REGEX = /([^a-z0-9]+)|(?<num>\d+)/ig
+    private static readonly SUFFIX_DELIMITER_REGEX = /([^a-z0-9]+)|(d+)/ig
 
     private static readonly SUFFIX_TOKEN_ORDERS: { [key: string]: number } = {
         sp: 2,
@@ -57,21 +57,39 @@ export class SemVer {
             return new SemVer(version, numbers, '', [])
         }
         const suffixTokens: SemVerSuffixToken[] = []
-        const iterator = suffixLower.matchAll(SemVer.SUFFIX_DELIMITER_REGEX)
-        let substringStart = 0
-        for (const match of iterator) {
-            const matchIndex = match.index!
-            if (substringStart < matchIndex) {
-                suffixTokens.push(suffixLower.substring(substringStart, matchIndex))
+        const currentToken: string[] = []
+        let isCurrentTokenNumeric = false
+        for (const ch of suffixLower) {
+            if ('0' <= ch && ch <= '9') {
+                if (isCurrentTokenNumeric) {
+                    currentToken.push(ch)
+                } else {
+                    if (currentToken) {
+                        suffixTokens.push(currentToken.join(''))
+                        currentToken.length = 0
+                    }
+                    currentToken.push(ch)
+                    isCurrentTokenNumeric = true
+                }
+            } else {
+                if (isCurrentTokenNumeric) {
+                    if (currentToken) {
+                        suffixTokens.push(parseInt(currentToken.join('')))
+                        currentToken.length = 0
+                    }
+                    currentToken.push(ch)
+                    isCurrentTokenNumeric = false
+                } else {
+                    currentToken.push(ch)
+                }
             }
-            const num = match[2]
-            if (num != null) {
-                suffixTokens.push(parseInt(num))
-            }
-            substringStart = matchIndex + match[0].length
         }
-        if (substringStart < suffixLower.length) {
-            suffixTokens.push(suffixLower.substring(substringStart))
+        if (currentToken) {
+            if (isCurrentTokenNumeric) {
+                suffixTokens.push(parseInt(currentToken.join('')))
+            } else {
+                suffixTokens.push(currentToken.join(''))
+            }
         }
         return new SemVer(version, numbers, suffix, suffixTokens)
     }
