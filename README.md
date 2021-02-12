@@ -1,2 +1,2 @@
-# template-typescript
-Template repository for GitHub typescript actions
+# retrieve-gradle-versions
+Retrieve Gradle versions
