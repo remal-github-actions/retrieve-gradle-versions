@@ -6,9 +6,6 @@ inputs:
     required: false
     description: Minimum Gradle version
 
-outputs:
-
-
 runs:
   using: node12
   main: 'dist/index.js'
