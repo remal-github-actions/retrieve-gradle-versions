@@ -35,6 +35,44 @@ class SemVer {
             return new SemVer(version, numbers, '', []);
         }
         const suffixTokens = [];
+        const currentToken = [];
+        let isCurrentTokenNumeric = false;
+        for (const ch of suffixLower) {
+            if ('0' <= ch && ch <= '9') {
+                if (isCurrentTokenNumeric) {
+                    currentToken.push(ch);
+                }
+                else {
+                    if (currentToken) {
+                        suffixTokens.push(currentToken.join(''));
+                        currentToken.length = 0;
+                    }
+                    currentToken.push(ch);
+                    isCurrentTokenNumeric = true;
+                }
+            }
+            else {
+                if (isCurrentTokenNumeric) {
+                    if (currentToken) {
+                        suffixTokens.push(parseInt(currentToken.join('')));
+                        currentToken.length = 0;
+                    }
+                    currentToken.push(ch);
+                    isCurrentTokenNumeric = false;
+                }
+                else {
+                    currentToken.push(ch);
+                }
+            }
+        }
+        if (currentToken) {
+            if (isCurrentTokenNumeric) {
+                suffixTokens.push(parseInt(currentToken.join('')));
+            }
+            else {
+                suffixTokens.push(currentToken.join(''));
+            }
+        }
         return new SemVer(version, numbers, suffix, suffixTokens);
     }
 }

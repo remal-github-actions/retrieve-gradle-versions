@@ -4,7 +4,7 @@ export class SemVer {
 
     private static readonly VERSION_REGEX = /^(?<numbers>\d+(\.\d+)*)([-._+](?<suffix>.+))?$/
 
-    private static readonly SUFFIX_DELIMITER_REGEX = /([^a-z0-9]+)|(d+)/ig
+    private static readonly UNICODE_LETTER_REGEX = /\p{L}/u
 
     private static readonly SUFFIX_TOKEN_ORDERS: { [key: string]: number } = {
         sp: 2,
@@ -79,7 +79,7 @@ export class SemVer {
                     }
                     currentToken.push(ch)
                     isCurrentTokenNumeric = false
-                } else {
+                } else if (ch !== '_' && SemVer.UNICODE_LETTER_REGEX.test(ch)) {
                     currentToken.push(ch)
                 }
             }
