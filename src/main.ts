@@ -1,14 +1,18 @@
 import * as core from '@actions/core'
 import {HttpClient, HttpClientError} from '@actions/http-client'
+import {SemVer} from 'semver'
 import {retry} from 'ts-retry-promise'
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 async function run(): Promise<void> {
     try {
+        core.info(`1-rc-1: ${SemVer.parse('1-rc-1').suffixTokens.join(', ')}`)
+        core.info(`1-rc1: ${SemVer.parse('1-rc-1').suffixTokens.join(', ')}`)
+
         const httpClient = new HttpClient()
         try {
-            const versions = await retry(
+            const gradleVersions = await retry(
                 () => httpClient.getJson<GradleVersion[]>('https://services.gradle.org/versions/all', {
                     Accept: 'application/json',
                 })
@@ -28,8 +32,33 @@ async function run(): Promise<void> {
                 }
             )
 
-            for (const version of versions) {
-                core.info(JSON.stringify(version, null, 2))
+            const minVersion = SemVer.parse(core.getInput('minVersion'))
+
+            let rcVersion: SemVer | undefined = undefined
+            const releaseVersions: SemVer[] = []
+            for (const gradleVersion of gradleVersions) {
+                if (gradleVersion.broken
+                    || gradleVersion.snapshot
+                    || gradleVersion.nightly
+                    || gradleVersion.releaseNightly
+                    || gradleVersion.milestoneFor
+                ) {
+                    continue
+                }
+
+                const version = SemVer.parse(gradleVersion.version)
+
+                if (!rcVersion && gradleVersion.activeRc) {
+                    rcVersion = version
+                }
+                if (gradleVersion.rcFor
+                    || version.prerelease
+                    || version.build
+                ) {
+                    continue
+                }
+
+                releaseVersions.push(version)
             }
 
         } finally {
@@ -50,9 +79,6 @@ run()
 interface GradleVersion {
     version: string
     buildTime: string
-    downloadUrl: string
-    checksumUrl: string
-    wrapperChecksumUrl: string
     current: boolean | null
     snapshot: boolean | null
     nightly: boolean | null
