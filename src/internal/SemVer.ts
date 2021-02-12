@@ -51,9 +51,10 @@ export class SemVer {
 
         const numbers = matches.groups!.numbers.split(/[^\d]+/).map(str => parseInt(str))
 
-        const suffixLower: string | null = matches.groups!.suffix?.toLowerCase()
+        const suffix: string | null = matches.groups!.suffix
+        const suffixLower = suffix?.toLowerCase()
         if (!suffixLower) {
-            return new SemVer(version, numbers, [])
+            return new SemVer(version, numbers, '', [])
         }
         const suffixTokens: SemVerSuffixToken[] = []
         const iterator = suffixLower.matchAll(SemVer.SUFFIX_DELIMITER_REGEX)
@@ -72,16 +73,18 @@ export class SemVer {
         if (substringStart < suffixLower.length) {
             suffixTokens.push(suffixLower.substring(substringStart))
         }
-        return new SemVer(version, numbers, suffixTokens)
+        return new SemVer(version, numbers, suffix, suffixTokens)
     }
 
     private readonly version: string
     readonly numbers: readonly number[]
+    readonly suffix: string
     readonly suffixTokens: readonly SemVerSuffixToken[]
 
-    private constructor(version: string, numbers: number[], suffixTokens: SemVerSuffixToken[]) {
+    private constructor(version: string, numbers: number[], suffix: string, suffixTokens: SemVerSuffixToken[]) {
         this.version = version
         this.numbers = [...numbers]
+        this.suffix = suffix
         this.suffixTokens = [...suffixTokens]
     }
 

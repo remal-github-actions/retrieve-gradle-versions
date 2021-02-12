@@ -52,8 +52,7 @@ async function run(): Promise<void> {
                     rcVersion = version
                 }
                 if (gradleVersion.rcFor
-                    || version.prerelease
-                    || version.build
+                    || version.suffix
                 ) {
                     continue
                 }
