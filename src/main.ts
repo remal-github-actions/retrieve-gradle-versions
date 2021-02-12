@@ -1,7 +1,7 @@
 import * as core from '@actions/core'
 import {HttpClient, HttpClientError} from '@actions/http-client'
-import {SemVer} from 'semver'
 import {retry} from 'ts-retry-promise'
+import {SemVer} from './internal/SemVer'
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
