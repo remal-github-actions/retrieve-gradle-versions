@@ -9,7 +9,7 @@ inputs:
     required: false
     description: Maximum Gradle version
 
-outputs:
+outputs: { }
 
 runs:
   using: node12
