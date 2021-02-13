@@ -5,6 +5,11 @@ inputs:
   minVersion:
     required: false
     description: Minimum Gradle version
+  maxVersion:
+    required: false
+    description: Maximum Gradle version
+
+outputs:
 
 runs:
   using: node12

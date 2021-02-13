@@ -1,16 +1,13 @@
 import * as core from '@actions/core'
 import {HttpClient, HttpClientError} from '@actions/http-client'
+import compareVersions from 'compare-versions'
 import {retry} from 'ts-retry-promise'
-import {SemVer} from './internal/SemVer'
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 async function run(): Promise<void> {
     try {
-        core.info(`1-rc-1: ${SemVer.parse('1-rc-1').suffixTokens.join(', ')}`)
-        core.info(`1-rc1: ${SemVer.parse('1-rc1').suffixTokens.join(', ')}`)
-        core.info(`1-rc: ${SemVer.parse('1-rc').suffixTokens.join(', ')}`)
-        core.info(`1-1: ${SemVer.parse('1-1').suffixTokens.join(', ')}`)
+        core.info(`1-rc-1: ${compareVersions.validate('1-rc-1')}`)
 
         const httpClient = new HttpClient()
         try {
@@ -34,10 +31,18 @@ async function run(): Promise<void> {
                 }
             )
 
-            const minVersion = SemVer.parse(core.getInput('minVersion'))
+            const minVersion = core.getInput('minVersion')
+            if (minVersion && !compareVersions.validate(minVersion)) {
+                throw new Error(`Invalid minVersion: ${minVersion}`)
+            }
 
-            let rcVersion: SemVer | undefined = undefined
-            const releaseVersions: SemVer[] = []
+            const maxVersion = core.getInput('maxVersion')
+            if (maxVersion && !compareVersions.validate(maxVersion)) {
+                throw new Error(`Invalid maxVersion: ${maxVersion}`)
+            }
+
+            let rcVersions: string[] = []
+            let releaseVersions: string[] = []
             for (const gradleVersion of gradleVersions) {
                 if (gradleVersion.broken
                     || gradleVersion.snapshot
@@ -48,19 +53,51 @@ async function run(): Promise<void> {
                     continue
                 }
 
-                const version = SemVer.parse(gradleVersion.version)
+                const version = gradleVersion.version
 
-                if (!rcVersion && gradleVersion.activeRc) {
-                    rcVersion = version
+                if (gradleVersion.activeRc) {
+                    rcVersions.push(version)
+                    continue
                 }
-                if (gradleVersion.rcFor
-                    || version.suffix
-                ) {
+
+                if (!compareVersions.validate(version)) {
+                    core.warning(`Invalid Gradle version: ${version}`)
                     continue
                 }
 
                 releaseVersions.push(version)
             }
+
+            if (minVersion || maxVersion) {
+                const filter: (string) => boolean = version => {
+                    if (minVersion && compareVersions.compare(version, minVersion, '<')) {
+                        return false
+                    }
+                    if (maxVersion && compareVersions.compare(version, maxVersion, '>')) {
+                        return false
+                    }
+                    return true
+                }
+                rcVersions = rcVersions.filter(filter)
+                releaseVersions = releaseVersions.filter(filter)
+            }
+
+            const rcVersion: string | undefined = (function () {
+                if (rcVersions.length === 0) {
+                    return undefined
+                }
+                if (rcVersions.length > 1) {
+                    core.warning(`Several active RC versions:\n  ${rcVersions.join('\n  ')}`)
+                }
+                return rcVersions[0]
+            })()
+
+            releaseVersions.sort(compareVersions)
+
+            if (rcVersion !== undefined) {
+                core.info(`RC version: ${rcVersion}`)
+            }
+            core.info(`Release versions: ${releaseVersions.join(', ')}`)
 
         } finally {
             httpClient.dispose()
