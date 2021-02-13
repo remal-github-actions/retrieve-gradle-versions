@@ -47,7 +47,6 @@ const ts_retry_promise_1 = __nccwpck_require__(711);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            core.info(`1-rc-1: ${compare_versions_1.default.validate('1-rc-1')}`);
             const httpClient = new http_client_1.HttpClient();
             try {
                 const gradleVersions = yield ts_retry_promise_1.retry(() => httpClient.getJson('https://services.gradle.org/versions/all', {
@@ -64,13 +63,13 @@ function run() {
                     retries: 3,
                     delay: 5000,
                 });
-                const minVersion = core.getInput('minVersion');
+                const minVersion = core.getInput('min');
                 if (minVersion && !compare_versions_1.default.validate(minVersion)) {
-                    throw new Error(`Invalid minVersion: ${minVersion}`);
+                    throw new Error(`Invalid min version: ${minVersion}`);
                 }
-                const maxVersion = core.getInput('maxVersion');
+                const maxVersion = core.getInput('max');
                 if (maxVersion && !compare_versions_1.default.validate(maxVersion)) {
-                    throw new Error(`Invalid maxVersion: ${maxVersion}`);
+                    throw new Error(`Invalid max version: ${maxVersion}`);
                 }
                 let rcVersions = [];
                 let releaseVersions = [];
@@ -87,6 +86,9 @@ function run() {
                         rcVersions.push(version);
                         continue;
                     }
+                    if (gradleVersion.rcFor) {
+                        continue;
+                    }
                     if (!compare_versions_1.default.validate(version)) {
                         core.warning(`Invalid Gradle version: ${version}`);
                         continue;
@@ -95,6 +97,7 @@ function run() {
                 }
                 if (minVersion || maxVersion) {
                     const filter = version => {
+                        version = version.split('-')[0];
                         if (minVersion && compare_versions_1.default.compare(version, minVersion, '<')) {
                             return false;
                         }
@@ -116,10 +119,15 @@ function run() {
                     return rcVersions[0];
                 })();
                 releaseVersions.sort(compare_versions_1.default);
+                const all = [...releaseVersions];
+                core.info(`all: ${all.join(', ')}`);
+                core.setOutput('all', JSON.stringify(all));
+                const allAndRC = [...all];
                 if (rcVersion !== undefined) {
-                    core.info(`RC version: ${rcVersion}`);
+                    allAndRC.push(rcVersion);
                 }
-                core.info(`Release versions: ${releaseVersions.join(', ')}`);
+                core.info(`allAndRC: ${allAndRC.join(', ')}`);
+                core.setOutput('allAndRC', JSON.stringify(allAndRC));
             }
             finally {
                 httpClient.dispose();
