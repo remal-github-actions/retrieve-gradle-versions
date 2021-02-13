@@ -32,14 +32,14 @@ async function run(): Promise<void> {
                 }
             )
 
-            const minVersion = core.getInput('minVersion')
+            const minVersion = core.getInput('min')
             if (minVersion && !compareVersions.validate(minVersion)) {
-                throw new Error(`Invalid minVersion: ${minVersion}`)
+                throw new Error(`Invalid min version: ${minVersion}`)
             }
 
-            const maxVersion = core.getInput('maxVersion')
+            const maxVersion = core.getInput('max')
             if (maxVersion && !compareVersions.validate(maxVersion)) {
-                throw new Error(`Invalid maxVersion: ${maxVersion}`)
+                throw new Error(`Invalid max version: ${maxVersion}`)
             }
 
             let rcVersions: string[] = []
@@ -99,10 +99,17 @@ async function run(): Promise<void> {
 
             releaseVersions.sort(compareVersions)
 
+
+            const all = [...releaseVersions]
+            core.info(`all: ${all.join(', ')}`)
+            core.setOutput('all', JSON.stringify(all))
+
+            const allAndRC = [...all]
             if (rcVersion !== undefined) {
-                core.info(`RC version: ${rcVersion}`)
+                allAndRC.push(rcVersion)
             }
-            core.info(`Release versions: ${releaseVersions.join(', ')}`)
+            core.info(`allAndRC: ${allAndRC.join(', ')}`)
+            core.setOutput('allAndRC', JSON.stringify(allAndRC))
 
         } finally {
             httpClient.dispose()
