@@ -86,7 +86,8 @@ function run() {
                         rcVersions.push(version);
                         continue;
                     }
-                    if (gradleVersion.rcFor) {
+                    if (gradleVersion.rcFor
+                        || version.includes('-milestone-')) {
                         continue;
                     }
                     if (!compare_versions_1.default.validate(version)) {
