@@ -8,6 +8,7 @@ import {retry} from 'ts-retry-promise'
 async function run(): Promise<void> {
     try {
         core.info(`1-rc-1: ${compareVersions.validate('1-rc-1')}`)
+        core.info(`1-rc-10 <=> 1-rc-2: ${compareVersions('1-rc-10', '1-rc-2')}`)
 
         const httpClient = new HttpClient()
         try {
