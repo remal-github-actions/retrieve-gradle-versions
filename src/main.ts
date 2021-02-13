@@ -60,6 +60,9 @@ async function run(): Promise<void> {
                     rcVersions.push(version)
                     continue
                 }
+                if (gradleVersion.rcFor) {
+                    continue
+                }
 
                 if (!compareVersions.validate(version)) {
                     core.warning(`Invalid Gradle version: ${version}`)
@@ -71,6 +74,7 @@ async function run(): Promise<void> {
 
             if (minVersion || maxVersion) {
                 const filter: (string) => boolean = version => {
+                    version = version.split('-')[0]
                     if (minVersion && compareVersions.compare(version, minVersion, '<')) {
                         return false
                     }
