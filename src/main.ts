@@ -57,7 +57,9 @@ async function run(): Promise<void> {
                     rcVersions.push(version)
                     continue
                 }
-                if (gradleVersion.rcFor) {
+                if (gradleVersion.rcFor
+                    || version.includes('-milestone-')
+                ) {
                     continue
                 }
 
