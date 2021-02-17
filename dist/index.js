@@ -2,112 +2,6 @@ module.exports =
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 676:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.VersionParsingException = exports.SemVer = void 0;
-class SemVer {
-    constructor(version, numbers, suffix, suffixTokens) {
-        this.version = version;
-        this.numbers = [...numbers];
-        this.suffix = suffix;
-        this.suffixTokens = [...suffixTokens];
-    }
-    static parse(versionObject) {
-        if (versionObject == null) {
-            throw new VersionParsingException('Version must not be null or undefined');
-        }
-        const version = versionObject.toString().trim();
-        if (!version) {
-            throw new VersionParsingException('Version must not be empty');
-        }
-        const matches = SemVer.VERSION_REGEX.exec(version);
-        if (!matches) {
-            throw new VersionParsingException(`Version doesn't match ${SemVer.VERSION_REGEX} pattern: ${version}`);
-        }
-        const numbers = matches.groups.numbers.split(/[^\d]+/).map(str => parseInt(str));
-        const suffix = matches.groups.suffix;
-        const suffixLower = suffix === null || suffix === void 0 ? void 0 : suffix.toLowerCase();
-        if (!suffixLower) {
-            return new SemVer(version, numbers, '', []);
-        }
-        const suffixTokens = [];
-        const currentToken = [];
-        let isCurrentTokenNumeric = false;
-        for (const ch of suffixLower) {
-            if ('0' <= ch && ch <= '9') {
-                if (isCurrentTokenNumeric) {
-                    currentToken.push(ch);
-                }
-                else {
-                    if (currentToken) {
-                        suffixTokens.push(currentToken.join(''));
-                        currentToken.length = 0;
-                    }
-                    currentToken.push(ch);
-                    isCurrentTokenNumeric = true;
-                }
-            }
-            else {
-                if (isCurrentTokenNumeric) {
-                    if (currentToken) {
-                        suffixTokens.push(parseInt(currentToken.join('')));
-                        currentToken.length = 0;
-                    }
-                    currentToken.push(ch);
-                    isCurrentTokenNumeric = false;
-                }
-                else {
-                    currentToken.push(ch);
-                }
-            }
-        }
-        if (currentToken) {
-            if (isCurrentTokenNumeric) {
-                suffixTokens.push(parseInt(currentToken.join('')));
-            }
-            else {
-                suffixTokens.push(currentToken.join(''));
-            }
-        }
-        return new SemVer(version, numbers, suffix, suffixTokens);
-    }
-}
-exports.SemVer = SemVer;
-SemVer.VERSION_REGEX = /^(?<numbers>\d+(\.\d+)*)([-._+](?<suffix>.+))?$/;
-SemVer.SUFFIX_DELIMITER_REGEX = /([^a-z0-9]+)|(d+)/ig;
-SemVer.SUFFIX_TOKEN_ORDERS = {
-    sp: 2,
-    r: 1,
-    release: 1,
-    ga: 1,
-    final: 1,
-    snapshot: -1,
-    nightly: -2,
-    rc: -2,
-    cr: -2,
-    milestone: -3,
-    m: -3,
-    beta: -4,
-    b: -4,
-    alpha: -5,
-    a: -5,
-    dev: -6,
-    pr: -6,
-};
-class VersionParsingException extends Error {
-    constructor(message) {
-        super(message);
-    }
-}
-exports.VersionParsingException = VersionParsingException;
-
-
-/***/ }),
-
 /***/ 538:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -141,17 +35,18 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(186));
 const http_client_1 = __nccwpck_require__(925);
+const compare_versions_1 = __importDefault(__nccwpck_require__(296));
 const ts_retry_promise_1 = __nccwpck_require__(711);
-const SemVer_1 = __nccwpck_require__(676);
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            core.info(`1-rc-1: ${SemVer_1.SemVer.parse('1-rc-1').suffixTokens.join(', ')}`);
-            core.info(`1-rc1: ${SemVer_1.SemVer.parse('1-rc-1').suffixTokens.join(', ')}`);
             const httpClient = new http_client_1.HttpClient();
             try {
                 const gradleVersions = yield ts_retry_promise_1.retry(() => httpClient.getJson('https://services.gradle.org/versions/all', {
@@ -168,9 +63,16 @@ function run() {
                     retries: 3,
                     delay: 5000,
                 });
-                const minVersion = SemVer_1.SemVer.parse(core.getInput('minVersion'));
-                let rcVersion = undefined;
-                const releaseVersions = [];
+                const minVersion = core.getInput('min');
+                if (minVersion && !compare_versions_1.default.validate(minVersion)) {
+                    throw new Error(`Invalid min version: ${minVersion}`);
+                }
+                const maxVersion = core.getInput('max');
+                if (maxVersion && !compare_versions_1.default.validate(maxVersion)) {
+                    throw new Error(`Invalid max version: ${maxVersion}`);
+                }
+                let rcVersions = [];
+                let releaseVersions = [];
                 for (const gradleVersion of gradleVersions) {
                     if (gradleVersion.broken
                         || gradleVersion.snapshot
@@ -179,16 +81,54 @@ function run() {
                         || gradleVersion.milestoneFor) {
                         continue;
                     }
-                    const version = SemVer_1.SemVer.parse(gradleVersion.version);
-                    if (!rcVersion && gradleVersion.activeRc) {
-                        rcVersion = version;
+                    const version = gradleVersion.version;
+                    if (gradleVersion.activeRc) {
+                        rcVersions.push(version);
+                        continue;
                     }
                     if (gradleVersion.rcFor
-                        || version.suffix) {
+                        || version.includes('-milestone-')) {
+                        continue;
+                    }
+                    if (!compare_versions_1.default.validate(version)) {
+                        core.warning(`Invalid Gradle version: ${version}`);
                         continue;
                     }
                     releaseVersions.push(version);
                 }
+                if (minVersion || maxVersion) {
+                    const filter = version => {
+                        version = version.split('-')[0];
+                        if (minVersion && compare_versions_1.default.compare(version, minVersion, '<')) {
+                            return false;
+                        }
+                        if (maxVersion && compare_versions_1.default.compare(version, maxVersion, '>')) {
+                            return false;
+                        }
+                        return true;
+                    };
+                    rcVersions = rcVersions.filter(filter);
+                    releaseVersions = releaseVersions.filter(filter);
+                }
+                const rcVersion = (function () {
+                    if (rcVersions.length === 0) {
+                        return undefined;
+                    }
+                    if (rcVersions.length > 1) {
+                        core.warning(`Several active RC versions:\n  ${rcVersions.join('\n  ')}`);
+                    }
+                    return rcVersions[0];
+                })();
+                releaseVersions.sort(compare_versions_1.default);
+                const all = [...releaseVersions];
+                core.info(`all: ${all.join(', ')}`);
+                core.setOutput('all', JSON.stringify(all));
+                const allAndRC = [...all];
+                if (rcVersion !== undefined) {
+                    allAndRC.push(rcVersion);
+                }
+                core.info(`allAndRC: ${allAndRC.join(', ')}`);
+                core.setOutput('allAndRC', JSON.stringify(allAndRC));
             }
             finally {
                 httpClient.dispose();
@@ -1202,6 +1142,126 @@ function checkBypass(reqUrl) {
     return false;
 }
 exports.checkBypass = checkBypass;
+
+
+/***/ }),
+
+/***/ 296:
+/***/ (function(module) {
+
+/* global define */
+(function (root, factory) {
+  /* istanbul ignore next */
+  if (typeof define === 'function' && define.amd) {
+    define([], factory);
+  } else if (true) {
+    module.exports = factory();
+  } else {}
+}(this, function () {
+
+  var semver = /^v?(?:\d+)(\.(?:[x*]|\d+)(\.(?:[x*]|\d+)(\.(?:[x*]|\d+))?(?:-[\da-z\-]+(?:\.[\da-z\-]+)*)?(?:\+[\da-z\-]+(?:\.[\da-z\-]+)*)?)?)?$/i;
+
+  function indexOrEnd(str, q) {
+    return str.indexOf(q) === -1 ? str.length : str.indexOf(q);
+  }
+
+  function split(v) {
+    var c = v.replace(/^v/, '').replace(/\+.*$/, '');
+    var patchIndex = indexOrEnd(c, '-');
+    var arr = c.substring(0, patchIndex).split('.');
+    arr.push(c.substring(patchIndex + 1));
+    return arr;
+  }
+
+  function tryParse(v) {
+    return isNaN(Number(v)) ? v : Number(v);
+  }
+
+  function validate(version) {
+    if (typeof version !== 'string') {
+      throw new TypeError('Invalid argument expected string');
+    }
+    if (!semver.test(version)) {
+      throw new Error('Invalid argument not valid semver (\''+version+'\' received)');
+    }
+  }
+
+  function compareVersions(v1, v2) {
+    [v1, v2].forEach(validate);
+
+    var s1 = split(v1);
+    var s2 = split(v2);
+
+    for (var i = 0; i < Math.max(s1.length - 1, s2.length - 1); i++) {
+      var n1 = parseInt(s1[i] || 0, 10);
+      var n2 = parseInt(s2[i] || 0, 10);
+
+      if (n1 > n2) return 1;
+      if (n2 > n1) return -1;
+    }
+
+    var sp1 = s1[s1.length - 1];
+    var sp2 = s2[s2.length - 1];
+
+    if (sp1 && sp2) {
+      var p1 = sp1.split('.').map(tryParse);
+      var p2 = sp2.split('.').map(tryParse);
+
+      for (i = 0; i < Math.max(p1.length, p2.length); i++) {
+        if (p1[i] === undefined || typeof p2[i] === 'string' && typeof p1[i] === 'number') return -1;
+        if (p2[i] === undefined || typeof p1[i] === 'string' && typeof p2[i] === 'number') return 1;
+
+        if (p1[i] > p2[i]) return 1;
+        if (p2[i] > p1[i]) return -1;
+      }
+    } else if (sp1 || sp2) {
+      return sp1 ? -1 : 1;
+    }
+
+    return 0;
+  };
+
+  var allowedOperators = [
+    '>',
+    '>=',
+    '=',
+    '<',
+    '<='
+  ];
+
+  var operatorResMap = {
+    '>': [1],
+    '>=': [0, 1],
+    '=': [0],
+    '<=': [-1, 0],
+    '<': [-1]
+  };
+
+  function validateOperator(op) {
+    if (typeof op !== 'string') {
+      throw new TypeError('Invalid operator type, expected string but got ' + typeof op);
+    }
+    if (allowedOperators.indexOf(op) === -1) {
+      throw new TypeError('Invalid operator, expected one of ' + allowedOperators.join('|'));
+    }
+  }
+
+  compareVersions.validate = function(version) {
+    return typeof version === 'string' && semver.test(version);
+  }
+
+  compareVersions.compare = function (v1, v2, operator) {
+    // Validate operator
+    validateOperator(operator);
+
+    // since result of compareVersions can only be -1 or 0 or 1
+    // a simple map can be used to replace switch
+    var res = compareVersions(v1, v2);
+    return operatorResMap[operator].indexOf(res) > -1;
+  }
+
+  return compareVersions;
+}));
 
 
 /***/ }),

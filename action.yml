@@ -2,9 +2,18 @@ name: Template action
 description: Template action description
 
 inputs:
-  minVersion:
+  min:
     required: false
     description: Minimum Gradle version
+  max:
+    required: false
+    description: Maximum Gradle version
+
+outputs:
+  all:
+    description: JSON array of all matched release Gradle versions
+  allAndRC:
+    description: JSON array of all matched release Gradle versions plus active RC version
 
 runs:
   using: node12
