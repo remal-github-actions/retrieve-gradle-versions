@@ -1,5 +1,5 @@
-import {Version} from './internal/Version'
-import {lastVersionByNumber} from "./main"
+import {lastVersionByNumber} from './lastVersionByNumber'
+import {Version} from './Version'
 
 describe('lastVersionByNumber', () => {
 

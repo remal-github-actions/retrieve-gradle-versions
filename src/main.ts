@@ -1,6 +1,7 @@
 import * as core from '@actions/core'
 import {HttpClient, HttpClientError} from '@actions/http-client'
 import {retry} from 'ts-retry-promise'
+import {lastVersionByNumber} from './internal/lastVersionByNumber'
 import {compareVersions, Version} from './internal/Version'
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
@@ -151,16 +152,4 @@ interface GradleVersion {
     rcFor: string | null
     milestoneFor: string | null
     broken: boolean | null
-}
-
-export function lastVersionByNumber(versions: Version[], pos: number): Version[] {
-    const grouped: { [key: string]: Version } = {}
-    for (const version of versions) {
-        const key = version.withoutSuffix().withoutNumber(pos + 1).withNumber(pos, 0).toString()
-        const prev = grouped[key]
-        if (!prev || prev.compareTo(version) < 0) {
-            grouped[key] = version
-        }
-    }
-    return Object.values(grouped)
 }
