@@ -264,6 +264,29 @@ exports.getTokensOrder = getTokensOrder;
 
 /***/ }),
 
+/***/ 716:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.lastVersionByNumber = void 0;
+function lastVersionByNumber(versions, pos) {
+    const grouped = {};
+    for (const version of versions) {
+        const key = version.withoutSuffix().withoutNumber(pos + 1).withNumber(pos, 0).toString();
+        const prev = grouped[key];
+        if (!prev || prev.compareTo(version) < 0) {
+            grouped[key] = version;
+        }
+    }
+    return Object.values(grouped);
+}
+exports.lastVersionByNumber = lastVersionByNumber;
+
+
+/***/ }),
+
 /***/ 538:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -298,10 +321,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.lastVersionByNumber = void 0;
 const core = __importStar(__nccwpck_require__(186));
 const http_client_1 = __nccwpck_require__(925);
 const ts_retry_promise_1 = __nccwpck_require__(711);
+const lastVersionByNumber_1 = __nccwpck_require__(716);
 const Version_1 = __nccwpck_require__(195);
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 function run() {
@@ -383,7 +406,7 @@ function run() {
                 }
                 core.info(`allAndRC: ${allAndRC.join(', ')}`);
                 core.setOutput('allAndRC', JSON.stringify(allAndRC));
-                const lastMinors = lastVersionByNumber(all, 2);
+                const lastMinors = lastVersionByNumber_1.lastVersionByNumber(all, 2);
                 core.info(`lastMinors: ${lastMinors.join(', ')}`);
                 core.setOutput('lastMinors', JSON.stringify(lastMinors));
                 const lastMinorsAndRC = [...lastMinors];
@@ -392,7 +415,7 @@ function run() {
                 }
                 core.info(`lastMinorsAndRC: ${lastMinorsAndRC.join(', ')}`);
                 core.setOutput('lastMinorsAndRC', JSON.stringify(lastMinorsAndRC));
-                const lastPatches = lastVersionByNumber(all, 3);
+                const lastPatches = lastVersionByNumber_1.lastVersionByNumber(all, 3);
                 core.info(`lastPatches: ${lastPatches.join(', ')}`);
                 core.setOutput('lastPatches', JSON.stringify(lastPatches));
                 const lastPatchesAndRC = [...lastPatches];
@@ -413,18 +436,6 @@ function run() {
 }
 //noinspection JSIgnoredPromiseFromCall
 run();
-function lastVersionByNumber(versions, pos) {
-    const grouped = {};
-    for (const version of versions) {
-        const key = version.withoutSuffix().withoutNumber(pos + 1).withNumber(pos, 0).toString();
-        const prev = grouped[key];
-        if (!prev || prev.compareTo(version) < 0) {
-            grouped[key] = version;
-        }
-    }
-    return Object.values(grouped);
-}
-exports.lastVersionByNumber = lastVersionByNumber;
 
 
 /***/ }),
