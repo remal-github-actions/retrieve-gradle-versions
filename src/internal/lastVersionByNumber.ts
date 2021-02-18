@@ -1,4 +1,4 @@
-import {Version} from './Version'
+import {compareVersions, Version} from './Version'
 
 export function lastVersionByNumber(versions: Version[], pos: number): Version[] {
     const grouped: { [key: string]: Version } = {}
@@ -9,5 +9,8 @@ export function lastVersionByNumber(versions: Version[], pos: number): Version[]
             grouped[key] = version
         }
     }
-    return Object.values(grouped)
+
+    const result = Object.values(grouped)
+    result.sort(compareVersions)
+    return result
 }
