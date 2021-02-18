@@ -265,12 +265,13 @@ exports.getTokensOrder = getTokensOrder;
 /***/ }),
 
 /***/ 716:
-/***/ ((__unused_webpack_module, exports) => {
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.lastVersionByNumber = void 0;
+const Version_1 = __nccwpck_require__(195);
 function lastVersionByNumber(versions, pos) {
     const grouped = {};
     for (const version of versions) {
@@ -280,7 +281,9 @@ function lastVersionByNumber(versions, pos) {
             grouped[key] = version;
         }
     }
-    return Object.values(grouped);
+    const result = Object.values(grouped);
+    result.sort(Version_1.compareVersions);
+    return result;
 }
 exports.lastVersionByNumber = lastVersionByNumber;
 
