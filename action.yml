@@ -14,14 +14,14 @@ outputs:
     description: JSON array of all matched Gradle versions
   allAndRC:
     description: JSON array of all matched Gradle versions plus active RC version
-  lastMinors:
-    description: JSON array of last minor matched Gradle versions
-  lastMinorsAndRC:
-    description: JSON array of last minor matched Gradle versions plus active RC version
-  lastPatches:
-    description: JSON array of last patch matched Gradle versions
-  lastPatchesAndRC:
-    description: JSON array of last patch matched Gradle versions plus active RC version
+  majors:
+    description: JSON array of last minor version of every matched Gradle major versions
+  majorsAndRC:
+    description: JSON array of last minor version of every matched Gradle major versions plus active RC version
+  minors:
+    description: JSON array of last patch version of every matched Gradle minor versions
+  minorsAndRC:
+    description: JSON array of last patch version of every matched Gradle minor versions plus active RC version
 
 runs:
   using: node12

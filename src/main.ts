@@ -103,27 +103,27 @@ async function run(): Promise<void> {
             core.info(`allAndRC: ${allAndRC.join(', ')}`)
             core.setOutput('allAndRC', JSON.stringify(allAndRC))
 
-            const lastMinors = lastVersionByNumber(all, 2)
-            core.info(`lastMinors: ${lastMinors.join(', ')}`)
-            core.setOutput('lastMinors', JSON.stringify(lastMinors))
+            const majors = lastVersionByNumber(all, 2)
+            core.info(`majors: ${majors.join(', ')}`)
+            core.setOutput('majors', JSON.stringify(majors))
 
-            const lastMinorsAndRC = [...lastMinors]
+            const majorsAndRC = [...majors]
             if (rcVersion !== undefined) {
-                lastMinorsAndRC.push(rcVersion)
+                majorsAndRC.push(rcVersion)
             }
-            core.info(`lastMinorsAndRC: ${lastMinorsAndRC.join(', ')}`)
-            core.setOutput('lastMinorsAndRC', JSON.stringify(lastMinorsAndRC))
+            core.info(`majorsAndRC: ${majorsAndRC.join(', ')}`)
+            core.setOutput('majorsAndRC', JSON.stringify(majorsAndRC))
 
-            const lastPatches = lastVersionByNumber(all, 3)
-            core.info(`lastPatches: ${lastPatches.join(', ')}`)
-            core.setOutput('lastPatches', JSON.stringify(lastPatches))
+            const minors = lastVersionByNumber(all, 3)
+            core.info(`minors: ${minors.join(', ')}`)
+            core.setOutput('minors', JSON.stringify(minors))
 
-            const lastPatchesAndRC = [...lastPatches]
+            const minorsAndRC = [...minors]
             if (rcVersion !== undefined) {
-                lastPatchesAndRC.push(rcVersion)
+                minorsAndRC.push(rcVersion)
             }
-            core.info(`lastPatchesAndRC: ${lastPatchesAndRC.join(', ')}`)
-            core.setOutput('lastPatchesAndRC', JSON.stringify(lastPatchesAndRC))
+            core.info(`minorsAndRC: ${minorsAndRC.join(', ')}`)
+            core.setOutput('minorsAndRC', JSON.stringify(minorsAndRC))
 
 
         } finally {
