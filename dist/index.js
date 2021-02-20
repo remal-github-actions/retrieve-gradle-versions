@@ -2,6 +2,294 @@ module.exports =
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
+/***/ 195:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.getTokensOrder = exports.compareSuffixTokens = exports.compareNumbers = exports.parseSuffixTokens = exports.parseSuffixString = exports.parseNumbers = exports.parseNumbersString = exports.matchVersion = exports.VERSION_REGEX = exports.compareVersions = exports.Version = void 0;
+class Version {
+    constructor(version) {
+        this._numbers = parseNumbers(version);
+        this._suffix = parseSuffixString(version);
+        this._suffixTokens = parseSuffixTokens(version);
+    }
+    static parse(value) {
+        if (value == null) {
+            return undefined;
+        }
+        const text = value.toString().trim();
+        if (text.length === 0) {
+            return undefined;
+        }
+        return new Version(text);
+    }
+    toString() {
+        return this._numbers.join('.') + this._suffix;
+    }
+    get numbers() {
+        return [...this._numbers];
+    }
+    number(pos) {
+        if (pos < 1) {
+            throw new Error(`pos must be greater or equal to 1: ${pos}`);
+        }
+        if (pos <= this._numbers.length) {
+            return this._numbers[pos - 1];
+        }
+        else {
+            return undefined;
+        }
+    }
+    get suffix() {
+        return this._suffix;
+    }
+    withNumbers(numbers) {
+        if (numbers.length === 0) {
+            throw new Error('numbers must not be empty');
+        }
+        return new Version(numbers.join('.') + this._suffix);
+    }
+    withSuffix(suffix) {
+        if (suffix.length === 0) {
+            return new Version(this._numbers.join('.'));
+        }
+        const ch = suffix.substring(0, 1);
+        if (('a' <= ch && ch <= 'z')
+            || ('A' <= ch && ch <= 'Z')
+            || ('0' <= ch && ch <= '9')) {
+            return new Version(`${this._numbers.join('.')}-${suffix}`);
+        }
+        else {
+            return new Version(this._numbers.join('.') + suffix);
+        }
+    }
+    withoutSuffix() {
+        if (this._suffix.length === 0) {
+            return this;
+        }
+        else {
+            return new Version(this._numbers.join('.'));
+        }
+    }
+    withNumber(pos, value) {
+        if (pos < 1) {
+            throw new Error(`pos must be greater or equal to 1: ${pos}`);
+        }
+        if (value < 0) {
+            throw new Error(`value must be greater or equal to 0: ${value}`);
+        }
+        const newNumbers = [...this._numbers];
+        for (let i = newNumbers.length; i < pos - 1; ++i) {
+            newNumbers[i] = 0;
+        }
+        newNumbers[pos - 1] = value;
+        return this.withNumbers(newNumbers);
+    }
+    withoutNumber(pos) {
+        if (pos < 2) {
+            throw new Error(`pos must be greater or equal to 2: ${pos}`);
+        }
+        if (pos > this._numbers.length) {
+            return this;
+        }
+        const newNumbers = [...this._numbers];
+        newNumbers.splice(pos - 1);
+        return this.withNumbers(newNumbers);
+    }
+    incrementNumber(pos, incrementer = 1) {
+        const number = this.number(pos) || 0;
+        return this.withNumber(pos, number + incrementer);
+    }
+    compareTo(other) {
+        let result = compareNumbers(this._numbers, other._numbers);
+        if (result === 0) {
+            result = compareSuffixTokens(this._suffixTokens, other._suffixTokens);
+        }
+        return result;
+    }
+    get hasSuffix() {
+        return this._suffixTokens.find(token => typeof token === 'string') !== undefined;
+    }
+    get isSnapshot() {
+        return getTokensOrder(this._suffixTokens) === getTokensOrder(['snapshot']);
+    }
+    get isRc() {
+        return getTokensOrder(this._suffixTokens) === getTokensOrder(['rc']);
+    }
+    get isMilestone() {
+        return getTokensOrder(this._suffixTokens) === getTokensOrder(['milestone']);
+    }
+    get isBeta() {
+        return getTokensOrder(this._suffixTokens) === getTokensOrder(['beta']);
+    }
+    get isAlpha() {
+        return getTokensOrder(this._suffixTokens) === getTokensOrder(['alpha']);
+    }
+}
+exports.Version = Version;
+function compareVersions(version1, version2) {
+    return version1.compareTo(version2);
+}
+exports.compareVersions = compareVersions;
+exports.VERSION_REGEX = /^(?<numbers>\d+(\.\d+)*)(?<suffix>[-.+_a-z0-9]*)$/i;
+function matchVersion(version) {
+    if (version.length === 0) {
+        throw new Error('Version must not be empty');
+    }
+    const match = version.match(exports.VERSION_REGEX);
+    if (match == null) {
+        throw new Error(`Version doesn't match to ${exports.VERSION_REGEX}: ${version}`);
+    }
+    return match;
+}
+exports.matchVersion = matchVersion;
+function parseNumbersString(version) {
+    const match = matchVersion(version);
+    return match.groups.numbers;
+}
+exports.parseNumbersString = parseNumbersString;
+function parseNumbers(version) {
+    const numbersString = parseNumbersString(version);
+    return numbersString.split('.')
+        .map(token => parseInt(token));
+}
+exports.parseNumbers = parseNumbers;
+function parseSuffixString(version) {
+    const match = matchVersion(version);
+    return match.groups.suffix || '';
+}
+exports.parseSuffixString = parseSuffixString;
+const SPLIT_LETTER_FROM_DIGIT = /([a-z])(\d)/g;
+const SPLIT_DIGIT_FROM_LETTER = /(\d)([a-z])/g;
+function parseSuffixTokens(version) {
+    const suffix = parseSuffixString(version)
+        .toLowerCase()
+        .replace(SPLIT_LETTER_FROM_DIGIT, '$1-$2')
+        .replace(SPLIT_DIGIT_FROM_LETTER, '$1-$2');
+    return suffix.split(/[-.+_]/)
+        .filter(token => token.length > 0)
+        .map(token => {
+        const number = parseInt(token);
+        if (!isNaN(number)) {
+            return number;
+        }
+        else {
+            return token;
+        }
+    });
+}
+exports.parseSuffixTokens = parseSuffixTokens;
+function compareNumbers(numbers1, numbers2) {
+    for (let i = 0; i < Math.min(numbers1.length, numbers2.length); ++i) {
+        const number1 = numbers1[i];
+        const number2 = numbers2[i];
+        const result = number1 - number2;
+        if (result !== 0) {
+            return result;
+        }
+    }
+    return numbers1.length - numbers2.length;
+}
+exports.compareNumbers = compareNumbers;
+function compareSuffixTokens(tokens1, tokens2) {
+    {
+        const order1 = getTokensOrder(tokens1);
+        const order2 = getTokensOrder(tokens2);
+        const result = order1 - order2;
+        if (result !== 0) {
+            return result;
+        }
+    }
+    for (let i = 0; i < Math.min(tokens1.length, tokens2.length); ++i) {
+        const token1 = tokens1[i];
+        const token2 = tokens2[i];
+        if (typeof token1 === 'number' && typeof token2 === 'number') {
+            const result = token1 - token2;
+            if (result !== 0) {
+                return result;
+            }
+        }
+        else if (typeof token1 === 'number') {
+            return 1;
+        }
+        else if (typeof token2 === 'number') {
+            return -1;
+        }
+        else {
+            if (token1 > token2) {
+                return 1;
+            }
+            else if (token1 < token2) {
+                return -1;
+            }
+        }
+    }
+    return tokens1.length - tokens2.length;
+}
+exports.compareSuffixTokens = compareSuffixTokens;
+const TOKENS_ORDER = {
+    'sp': 2,
+    'release': 1,
+    'r': 1,
+    'ga': 1,
+    'final': 1,
+    'snapshot': -1,
+    'nightly': -2,
+    'rc': -3,
+    'cr': -3,
+    'milestone': -4,
+    'm': -4,
+    'beta': -5,
+    'b': -5,
+    'alpha': -6,
+    'a': -6,
+    'dev': -7,
+    'pr': -7,
+};
+function getTokensOrder(tokens) {
+    for (const token of tokens) {
+        if (typeof token === 'string') {
+            const order = TOKENS_ORDER[token];
+            if (order != null) {
+                return order;
+            }
+        }
+    }
+    return 0;
+}
+exports.getTokensOrder = getTokensOrder;
+
+
+/***/ }),
+
+/***/ 716:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.lastVersionByNumber = void 0;
+const Version_1 = __nccwpck_require__(195);
+function lastVersionByNumber(versions, pos) {
+    const grouped = {};
+    for (const version of versions) {
+        const key = version.withoutSuffix().withoutNumber(pos + 1).withNumber(pos, 0).toString();
+        const prev = grouped[key];
+        if (!prev || prev.compareTo(version) < 0) {
+            grouped[key] = version;
+        }
+    }
+    const result = Object.values(grouped);
+    result.sort(Version_1.compareVersions);
+    return result;
+}
+exports.lastVersionByNumber = lastVersionByNumber;
+
+
+/***/ }),
+
 /***/ 538:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -35,14 +323,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(186));
 const http_client_1 = __nccwpck_require__(925);
-const compare_versions_1 = __importDefault(__nccwpck_require__(296));
 const ts_retry_promise_1 = __nccwpck_require__(711);
+const lastVersionByNumber_1 = __nccwpck_require__(716);
+const Version_1 = __nccwpck_require__(195);
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
@@ -63,14 +349,8 @@ function run() {
                     retries: 3,
                     delay: 5000,
                 });
-                const minVersion = core.getInput('min');
-                if (minVersion && !compare_versions_1.default.validate(minVersion)) {
-                    throw new Error(`Invalid min version: ${minVersion}`);
-                }
-                const maxVersion = core.getInput('max');
-                if (maxVersion && !compare_versions_1.default.validate(maxVersion)) {
-                    throw new Error(`Invalid max version: ${maxVersion}`);
-                }
+                const minVersion = Version_1.Version.parse(core.getInput('min'));
+                const maxVersion = Version_1.Version.parse(core.getInput('max'));
                 let rcVersions = [];
                 let releaseVersions = [];
                 for (const gradleVersion of gradleVersions) {
@@ -81,17 +361,17 @@ function run() {
                         || gradleVersion.milestoneFor) {
                         continue;
                     }
-                    const version = gradleVersion.version;
+                    const version = Version_1.Version.parse(gradleVersion.version);
+                    if (version === undefined) {
+                        core.warning(`Invalid Gradle version: ${gradleVersion.version}`);
+                        continue;
+                    }
                     if (gradleVersion.activeRc) {
                         rcVersions.push(version);
                         continue;
                     }
                     if (gradleVersion.rcFor
-                        || version.includes('-milestone-')) {
-                        continue;
-                    }
-                    if (!compare_versions_1.default.validate(version)) {
-                        core.warning(`Invalid Gradle version: ${version}`);
+                        || version.hasSuffix) {
                         continue;
                     }
                     releaseVersions.push(version);
@@ -99,10 +379,10 @@ function run() {
                 if (minVersion || maxVersion) {
                     const filter = version => {
                         version = version.split('-')[0];
-                        if (minVersion && compare_versions_1.default.compare(version, minVersion, '<')) {
+                        if (minVersion && minVersion.compareTo(version) > 0) {
                             return false;
                         }
-                        if (maxVersion && compare_versions_1.default.compare(version, maxVersion, '>')) {
+                        if (maxVersion && maxVersion.compareTo(version) < 0) {
                             return false;
                         }
                         return true;
@@ -119,7 +399,7 @@ function run() {
                     }
                     return rcVersions[0];
                 })();
-                releaseVersions.sort(compare_versions_1.default);
+                releaseVersions.sort(Version_1.compareVersions);
                 const all = [...releaseVersions];
                 core.info(`all: ${all.join(', ')}`);
                 core.setOutput('all', JSON.stringify(all));
@@ -129,6 +409,24 @@ function run() {
                 }
                 core.info(`allAndRC: ${allAndRC.join(', ')}`);
                 core.setOutput('allAndRC', JSON.stringify(allAndRC));
+                const majors = lastVersionByNumber_1.lastVersionByNumber(all, 2);
+                core.info(`majors: ${majors.join(', ')}`);
+                core.setOutput('majors', JSON.stringify(majors));
+                const majorsAndRC = [...majors];
+                if (rcVersion !== undefined) {
+                    majorsAndRC.push(rcVersion);
+                }
+                core.info(`majorsAndRC: ${majorsAndRC.join(', ')}`);
+                core.setOutput('majorsAndRC', JSON.stringify(majorsAndRC));
+                const minors = lastVersionByNumber_1.lastVersionByNumber(all, 3);
+                core.info(`minors: ${minors.join(', ')}`);
+                core.setOutput('minors', JSON.stringify(minors));
+                const minorsAndRC = [...minors];
+                if (rcVersion !== undefined) {
+                    minorsAndRC.push(rcVersion);
+                }
+                core.info(`minorsAndRC: ${minorsAndRC.join(', ')}`);
+                core.setOutput('minorsAndRC', JSON.stringify(minorsAndRC));
             }
             finally {
                 httpClient.dispose();
@@ -1142,126 +1440,6 @@ function checkBypass(reqUrl) {
     return false;
 }
 exports.checkBypass = checkBypass;
-
-
-/***/ }),
-
-/***/ 296:
-/***/ (function(module) {
-
-/* global define */
-(function (root, factory) {
-  /* istanbul ignore next */
-  if (typeof define === 'function' && define.amd) {
-    define([], factory);
-  } else if (true) {
-    module.exports = factory();
-  } else {}
-}(this, function () {
-
-  var semver = /^v?(?:\d+)(\.(?:[x*]|\d+)(\.(?:[x*]|\d+)(\.(?:[x*]|\d+))?(?:-[\da-z\-]+(?:\.[\da-z\-]+)*)?(?:\+[\da-z\-]+(?:\.[\da-z\-]+)*)?)?)?$/i;
-
-  function indexOrEnd(str, q) {
-    return str.indexOf(q) === -1 ? str.length : str.indexOf(q);
-  }
-
-  function split(v) {
-    var c = v.replace(/^v/, '').replace(/\+.*$/, '');
-    var patchIndex = indexOrEnd(c, '-');
-    var arr = c.substring(0, patchIndex).split('.');
-    arr.push(c.substring(patchIndex + 1));
-    return arr;
-  }
-
-  function tryParse(v) {
-    return isNaN(Number(v)) ? v : Number(v);
-  }
-
-  function validate(version) {
-    if (typeof version !== 'string') {
-      throw new TypeError('Invalid argument expected string');
-    }
-    if (!semver.test(version)) {
-      throw new Error('Invalid argument not valid semver (\''+version+'\' received)');
-    }
-  }
-
-  function compareVersions(v1, v2) {
-    [v1, v2].forEach(validate);
-
-    var s1 = split(v1);
-    var s2 = split(v2);
-
-    for (var i = 0; i < Math.max(s1.length - 1, s2.length - 1); i++) {
-      var n1 = parseInt(s1[i] || 0, 10);
-      var n2 = parseInt(s2[i] || 0, 10);
-
-      if (n1 > n2) return 1;
-      if (n2 > n1) return -1;
-    }
-
-    var sp1 = s1[s1.length - 1];
-    var sp2 = s2[s2.length - 1];
-
-    if (sp1 && sp2) {
-      var p1 = sp1.split('.').map(tryParse);
-      var p2 = sp2.split('.').map(tryParse);
-
-      for (i = 0; i < Math.max(p1.length, p2.length); i++) {
-        if (p1[i] === undefined || typeof p2[i] === 'string' && typeof p1[i] === 'number') return -1;
-        if (p2[i] === undefined || typeof p1[i] === 'string' && typeof p2[i] === 'number') return 1;
-
-        if (p1[i] > p2[i]) return 1;
-        if (p2[i] > p1[i]) return -1;
-      }
-    } else if (sp1 || sp2) {
-      return sp1 ? -1 : 1;
-    }
-
-    return 0;
-  };
-
-  var allowedOperators = [
-    '>',
-    '>=',
-    '=',
-    '<',
-    '<='
-  ];
-
-  var operatorResMap = {
-    '>': [1],
-    '>=': [0, 1],
-    '=': [0],
-    '<=': [-1, 0],
-    '<': [-1]
-  };
-
-  function validateOperator(op) {
-    if (typeof op !== 'string') {
-      throw new TypeError('Invalid operator type, expected string but got ' + typeof op);
-    }
-    if (allowedOperators.indexOf(op) === -1) {
-      throw new TypeError('Invalid operator, expected one of ' + allowedOperators.join('|'));
-    }
-  }
-
-  compareVersions.validate = function(version) {
-    return typeof version === 'string' && semver.test(version);
-  }
-
-  compareVersions.compare = function (v1, v2, operator) {
-    // Validate operator
-    validateOperator(operator);
-
-    // since result of compareVersions can only be -1 or 0 or 1
-    // a simple map can be used to replace switch
-    var res = compareVersions(v1, v2);
-    return operatorResMap[operator].indexOf(res) > -1;
-  }
-
-  return compareVersions;
-}));
 
 
 /***/ }),
