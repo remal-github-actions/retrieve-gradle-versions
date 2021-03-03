@@ -321,112 +321,110 @@ const ts_retry_promise_1 = __nccwpck_require__(711);
 const lastVersionByNumber_1 = __nccwpck_require__(716);
 const Version_1 = __nccwpck_require__(195);
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-function run() {
-    return __awaiter(this, void 0, void 0, function* () {
+async function run() {
+    try {
+        const httpClient = new http_client_1.HttpClient();
         try {
-            const httpClient = new http_client_1.HttpClient();
-            try {
-                const gradleVersions = yield ts_retry_promise_1.retry(() => httpClient.getJson('https://services.gradle.org/versions/all', {
-                    Accept: 'application/json',
-                })
-                    .then(response => {
-                    if (response.statusCode >= 200 && response.statusCode < 300) {
-                        return response.result;
-                    }
-                    else {
-                        throw new http_client_1.HttpClientError(`Request failed with status ${response.statusCode}`, response.statusCode);
-                    }
-                }), {
-                    retries: 3,
-                    delay: 5000,
-                });
-                const minVersion = Version_1.Version.parse(core.getInput('min'));
-                const maxVersion = Version_1.Version.parse(core.getInput('max'));
-                let rcVersions = [];
-                let releaseVersions = [];
-                for (const gradleVersion of gradleVersions) {
-                    if (gradleVersion.broken
-                        || gradleVersion.snapshot
-                        || gradleVersion.nightly
-                        || gradleVersion.releaseNightly
-                        || gradleVersion.milestoneFor) {
-                        continue;
-                    }
-                    const version = Version_1.Version.parse(gradleVersion.version);
-                    if (version === undefined) {
-                        core.warning(`Invalid Gradle version: ${gradleVersion.version}`);
-                        continue;
-                    }
-                    if (gradleVersion.activeRc) {
-                        rcVersions.push(version);
-                        continue;
-                    }
-                    if (gradleVersion.rcFor
-                        || version.hasSuffix) {
-                        continue;
-                    }
-                    releaseVersions.push(version);
+            const gradleVersions = await ts_retry_promise_1.retry(() => httpClient.getJson('https://services.gradle.org/versions/all', {
+                Accept: 'application/json',
+            })
+                .then(response => {
+                if (response.statusCode >= 200 && response.statusCode < 300) {
+                    return response.result;
                 }
-                if (minVersion || maxVersion) {
-                    const filter = version => {
-                        version = version.split('-')[0];
-                        if (minVersion && minVersion.compareTo(version) > 0) {
-                            return false;
-                        }
-                        if (maxVersion && maxVersion.compareTo(version) < 0) {
-                            return false;
-                        }
-                        return true;
-                    };
-                    rcVersions = rcVersions.filter(filter);
-                    releaseVersions = releaseVersions.filter(filter);
+                else {
+                    throw new http_client_1.HttpClientError(`Request failed with status ${response.statusCode}`, response.statusCode);
                 }
-                const rcVersion = (function () {
-                    if (rcVersions.length === 0) {
-                        return undefined;
-                    }
-                    if (rcVersions.length > 1) {
-                        core.warning(`Several active RC versions:\n  ${rcVersions.join('\n  ')}`);
-                    }
-                    return rcVersions[0];
-                })();
-                releaseVersions.sort(Version_1.compareVersions);
-                const all = [...releaseVersions];
-                core.info(`all: ${all.join(', ')}`);
-                core.setOutput('all', JSON.stringify(all));
-                const allAndRC = [...all];
-                if (rcVersion !== undefined) {
-                    allAndRC.push(rcVersion);
+            }), {
+                retries: 3,
+                delay: 5000,
+            });
+            const minVersion = Version_1.Version.parse(core.getInput('min'));
+            const maxVersion = Version_1.Version.parse(core.getInput('max'));
+            let rcVersions = [];
+            let releaseVersions = [];
+            for (const gradleVersion of gradleVersions) {
+                if (gradleVersion.broken
+                    || gradleVersion.snapshot
+                    || gradleVersion.nightly
+                    || gradleVersion.releaseNightly
+                    || gradleVersion.milestoneFor) {
+                    continue;
                 }
-                core.info(`allAndRC: ${allAndRC.join(', ')}`);
-                core.setOutput('allAndRC', JSON.stringify(allAndRC));
-                const majors = lastVersionByNumber_1.lastVersionByNumber(all, 2);
-                core.info(`majors: ${majors.join(', ')}`);
-                core.setOutput('majors', JSON.stringify(majors));
-                const majorsAndRC = [...majors];
-                if (rcVersion !== undefined) {
-                    majorsAndRC.push(rcVersion);
+                const version = Version_1.Version.parse(gradleVersion.version);
+                if (version === undefined) {
+                    core.warning(`Invalid Gradle version: ${gradleVersion.version}`);
+                    continue;
                 }
-                core.info(`majorsAndRC: ${majorsAndRC.join(', ')}`);
-                core.setOutput('majorsAndRC', JSON.stringify(majorsAndRC));
-                const minors = lastVersionByNumber_1.lastVersionByNumber(all, 3);
-                core.info(`minors: ${minors.join(', ')}`);
-                core.setOutput('minors', JSON.stringify(minors));
-                const minorsAndRC = [...minors];
-                if (rcVersion !== undefined) {
-                    minorsAndRC.push(rcVersion);
+                if (gradleVersion.activeRc) {
+                    rcVersions.push(version);
+                    continue;
                 }
-                core.info(`minorsAndRC: ${minorsAndRC.join(', ')}`);
-                core.setOutput('minorsAndRC', JSON.stringify(minorsAndRC));
+                if (gradleVersion.rcFor
+                    || version.hasSuffix) {
+                    continue;
+                }
+                releaseVersions.push(version);
             }
-            finally {
-                httpClient.dispose();
+            if (minVersion || maxVersion) {
+                const filter = version => {
+                    version = version.split('-')[0];
+                    if (minVersion && minVersion.compareTo(version) > 0) {
+                        return false;
+                    }
+                    if (maxVersion && maxVersion.compareTo(version) < 0) {
+                        return false;
+                    }
+                    return true;
+                };
+                rcVersions = rcVersions.filter(filter);
+                releaseVersions = releaseVersions.filter(filter);
             }
+            const rcVersion = (function () {
+                if (rcVersions.length === 0) {
+                    return undefined;
+                }
+                if (rcVersions.length > 1) {
+                    core.warning(`Several active RC versions:\n  ${rcVersions.join('\n  ')}`);
+                }
+                return rcVersions[0];
+            })();
+            releaseVersions.sort(Version_1.compareVersions);
+            const all = [...releaseVersions];
+            core.info(`all: ${all.join(', ')}`);
+            core.setOutput('all', JSON.stringify(all));
+            const allAndRC = [...all];
+            if (rcVersion !== undefined) {
+                allAndRC.push(rcVersion);
+            }
+            core.info(`allAndRC: ${allAndRC.join(', ')}`);
+            core.setOutput('allAndRC', JSON.stringify(allAndRC));
+            const majors = lastVersionByNumber_1.lastVersionByNumber(all, 2);
+            core.info(`majors: ${majors.join(', ')}`);
+            core.setOutput('majors', JSON.stringify(majors));
+            const majorsAndRC = [...majors];
+            if (rcVersion !== undefined) {
+                majorsAndRC.push(rcVersion);
+            }
+            core.info(`majorsAndRC: ${majorsAndRC.join(', ')}`);
+            core.setOutput('majorsAndRC', JSON.stringify(majorsAndRC));
+            const minors = lastVersionByNumber_1.lastVersionByNumber(all, 3);
+            core.info(`minors: ${minors.join(', ')}`);
+            core.setOutput('minors', JSON.stringify(minors));
+            const minorsAndRC = [...minors];
+            if (rcVersion !== undefined) {
+                minorsAndRC.push(rcVersion);
+            }
+            core.info(`minorsAndRC: ${minorsAndRC.join(', ')}`);
+            core.setOutput('minorsAndRC', JSON.stringify(minorsAndRC));
         }
-        catch (error) {
-            core.setFailed(error);
+        finally {
+            httpClient.dispose();
         }
-    });
+    }
+    catch (error) {
+        core.setFailed(error);
+    }
 }
 //noinspection JSIgnoredPromiseFromCall
 run();
