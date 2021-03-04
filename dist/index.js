@@ -459,18 +459,19 @@ async function run() {
         const minVersion = Version_1.Version.parse(core.getInput('min'));
         const maxVersion = Version_1.Version.parse(core.getInput('max'));
         const versions = await retriever_1.retrieveGradleVersions(minVersion, maxVersion);
-        core.info(`all: ${versions.all.join(', ')}`);
-        core.setOutput('all', JSON.stringify(versions.all));
-        core.info(`allAndRC: ${versions.allAndRC.join(', ')}`);
-        core.setOutput('allAndRC', JSON.stringify(versions.allAndRC));
-        core.info(`majors: ${versions.majors.join(', ')}`);
-        core.setOutput('majors', JSON.stringify(versions.majors));
-        core.info(`majorsAndRC: ${versions.majorsAndRC.join(', ')}`);
-        core.setOutput('majorsAndRC', JSON.stringify(versions.majorsAndRC));
-        core.info(`minors: ${versions.minors.join(', ')}`);
-        core.setOutput('minors', JSON.stringify(versions.minors));
-        core.info(`minorsAndRC: ${versions.minorsAndRC.join(', ')}`);
-        core.setOutput('minorsAndRC', JSON.stringify(versions.minorsAndRC));
+        Object.entries(versions).forEach(([key, value]) => {
+            if (value == null) {
+                // skip NULLs
+            }
+            else if (Array.isArray(value)) {
+                core.info(`${key}: ${value.join(', ')}`);
+                core.setOutput(key, JSON.stringify(value));
+            }
+            else {
+                core.info(`${key}: ${value}`);
+                core.setOutput(key, value.toString());
+            }
+        });
     }
     catch (error) {
         core.setFailed(error);
