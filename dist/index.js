@@ -8,7 +8,7 @@ module.exports =
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getTokensOrder = exports.compareSuffixTokens = exports.compareNumbers = exports.parseSuffixTokens = exports.parseSuffixString = exports.parseNumbers = exports.parseNumbersString = exports.matchVersion = exports.VERSION_REGEX = exports.compareVersions = exports.Version = void 0;
+exports.getTokensOrder = exports.compareSuffixTokens = exports.compareNumbers = exports.parseSuffixTokens = exports.parseSuffixString = exports.parseNumbers = exports.parseNumbersString = exports.matchVersion = exports.VERSION_REGEX = exports.compareVersionsDesc = exports.compareVersions = exports.Version = void 0;
 class Version {
     constructor(version) {
         this._numbers = parseNumbers(version);
@@ -133,6 +133,10 @@ function compareVersions(version1, version2) {
     return version1.compareTo(version2);
 }
 exports.compareVersions = compareVersions;
+function compareVersionsDesc(version1, version2) {
+    return -1 * compareVersions(version1, version2);
+}
+exports.compareVersionsDesc = compareVersionsDesc;
 exports.VERSION_REGEX = /^(?<numbers>\d+(\.\d+)*)(?<suffix>[-.+_a-z0-9]*)$/i;
 function matchVersion(version) {
     if (version.length === 0) {
@@ -265,13 +269,12 @@ exports.getTokensOrder = getTokensOrder;
 /***/ }),
 
 /***/ 716:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.lastVersionByNumber = void 0;
-const Version_1 = __nccwpck_require__(195);
 function lastVersionByNumber(versions, pos) {
     const grouped = {};
     for (const version of versions) {
@@ -281,11 +284,140 @@ function lastVersionByNumber(versions, pos) {
             grouped[key] = version;
         }
     }
-    const result = Object.values(grouped);
-    result.sort(Version_1.compareVersions);
-    return result;
+    return Object.values(grouped);
 }
 exports.lastVersionByNumber = lastVersionByNumber;
+
+
+/***/ }),
+
+/***/ 617:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.retrieveGradleVersions = void 0;
+const core = __importStar(__nccwpck_require__(186));
+const http_client_1 = __nccwpck_require__(925);
+const ts_retry_promise_1 = __nccwpck_require__(711);
+const lastVersionByNumber_1 = __nccwpck_require__(716);
+const Version_1 = __nccwpck_require__(195);
+const timeoutBetweenRetries = process.env.NODE_ENV !== 'test' ? 5000 : 0;
+async function retrieveGradleVersions(minVersion, maxVersion) {
+    const httpClient = new http_client_1.HttpClient();
+    return ts_retry_promise_1.retry(() => httpClient.getJson('https://services.gradle.org/versions/all', {
+        Accept: 'application/json',
+        'Accept-Encoding': 'identity',
+    })
+        .then(response => {
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+            return response.result;
+        }
+        else {
+            throw new http_client_1.HttpClientError(`Request failed with status ${response.statusCode}`, response.statusCode);
+        }
+    }), {
+        retries: 2,
+        delay: timeoutBetweenRetries,
+    })
+        .then(gradleVersions => {
+        let rcVersions = [];
+        let releaseVersions = [];
+        for (const gradleVersion of gradleVersions) {
+            if (gradleVersion.broken
+                || gradleVersion.snapshot
+                || gradleVersion.nightly
+                || gradleVersion.releaseNightly
+                || gradleVersion.milestoneFor) {
+                continue;
+            }
+            const version = Version_1.Version.parse(gradleVersion.version);
+            if (version === undefined) {
+                core.warning(`Invalid Gradle version: ${gradleVersion.version}`);
+                continue;
+            }
+            if (gradleVersion.activeRc) {
+                rcVersions.push(version);
+                continue;
+            }
+            if (gradleVersion.rcFor
+                || version.hasSuffix) {
+                continue;
+            }
+            releaseVersions.push(version);
+        }
+        if (minVersion || maxVersion) {
+            const filter = version => {
+                version = version.split('-')[0];
+                if (minVersion && minVersion.compareTo(version) > 0) {
+                    return false;
+                }
+                if (maxVersion && maxVersion.compareTo(version) < 0) {
+                    return false;
+                }
+                return true;
+            };
+            rcVersions = rcVersions.filter(filter);
+            releaseVersions = releaseVersions.filter(filter);
+        }
+        rcVersions.sort(Version_1.compareVersionsDesc);
+        releaseVersions.sort(Version_1.compareVersionsDesc);
+        const rcVersion = (function () {
+            if (rcVersions.length === 0) {
+                return undefined;
+            }
+            if (rcVersions.length > 1) {
+                core.warning(`Several active RC versions:\n  ${rcVersions.join('\n  ')}`);
+            }
+            return rcVersions[0];
+        })();
+        const all = [...releaseVersions];
+        const allAndRC = [...all];
+        if (rcVersion !== undefined) {
+            allAndRC.push(rcVersion);
+        }
+        const majors = lastVersionByNumber_1.lastVersionByNumber(all, 2);
+        const majorsAndRC = [...majors];
+        if (rcVersion !== undefined) {
+            majorsAndRC.push(rcVersion);
+        }
+        const minors = lastVersionByNumber_1.lastVersionByNumber(all, 3);
+        const minorsAndRC = [...minors];
+        if (rcVersion !== undefined) {
+            minorsAndRC.push(rcVersion);
+        }
+        return {
+            all,
+            allAndRC,
+            majors,
+            majorsAndRC,
+            minors,
+            minorsAndRC
+        };
+    })
+        .finally(() => httpClient.dispose());
+}
+exports.retrieveGradleVersions = retrieveGradleVersions;
 
 
 /***/ }),
@@ -316,111 +448,26 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(186));
-const http_client_1 = __nccwpck_require__(925);
-const ts_retry_promise_1 = __nccwpck_require__(711);
-const lastVersionByNumber_1 = __nccwpck_require__(716);
+const retriever_1 = __nccwpck_require__(617);
 const Version_1 = __nccwpck_require__(195);
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 async function run() {
     try {
-        const httpClient = new http_client_1.HttpClient();
-        try {
-            const gradleVersions = await ts_retry_promise_1.retry(() => httpClient.getJson('https://services.gradle.org/versions/all', {
-                Accept: 'application/json',
-            })
-                .then(response => {
-                if (response.statusCode >= 200 && response.statusCode < 300) {
-                    return response.result;
-                }
-                else {
-                    throw new http_client_1.HttpClientError(`Request failed with status ${response.statusCode}`, response.statusCode);
-                }
-            }), {
-                retries: 3,
-                delay: 5000,
-            });
-            const minVersion = Version_1.Version.parse(core.getInput('min'));
-            const maxVersion = Version_1.Version.parse(core.getInput('max'));
-            let rcVersions = [];
-            let releaseVersions = [];
-            for (const gradleVersion of gradleVersions) {
-                if (gradleVersion.broken
-                    || gradleVersion.snapshot
-                    || gradleVersion.nightly
-                    || gradleVersion.releaseNightly
-                    || gradleVersion.milestoneFor) {
-                    continue;
-                }
-                const version = Version_1.Version.parse(gradleVersion.version);
-                if (version === undefined) {
-                    core.warning(`Invalid Gradle version: ${gradleVersion.version}`);
-                    continue;
-                }
-                if (gradleVersion.activeRc) {
-                    rcVersions.push(version);
-                    continue;
-                }
-                if (gradleVersion.rcFor
-                    || version.hasSuffix) {
-                    continue;
-                }
-                releaseVersions.push(version);
-            }
-            if (minVersion || maxVersion) {
-                const filter = version => {
-                    version = version.split('-')[0];
-                    if (minVersion && minVersion.compareTo(version) > 0) {
-                        return false;
-                    }
-                    if (maxVersion && maxVersion.compareTo(version) < 0) {
-                        return false;
-                    }
-                    return true;
-                };
-                rcVersions = rcVersions.filter(filter);
-                releaseVersions = releaseVersions.filter(filter);
-            }
-            const rcVersion = (function () {
-                if (rcVersions.length === 0) {
-                    return undefined;
-                }
-                if (rcVersions.length > 1) {
-                    core.warning(`Several active RC versions:\n  ${rcVersions.join('\n  ')}`);
-                }
-                return rcVersions[0];
-            })();
-            releaseVersions.sort(Version_1.compareVersions);
-            const all = [...releaseVersions];
-            core.info(`all: ${all.join(', ')}`);
-            core.setOutput('all', JSON.stringify(all));
-            const allAndRC = [...all];
-            if (rcVersion !== undefined) {
-                allAndRC.push(rcVersion);
-            }
-            core.info(`allAndRC: ${allAndRC.join(', ')}`);
-            core.setOutput('allAndRC', JSON.stringify(allAndRC));
-            const majors = lastVersionByNumber_1.lastVersionByNumber(all, 2);
-            core.info(`majors: ${majors.join(', ')}`);
-            core.setOutput('majors', JSON.stringify(majors));
-            const majorsAndRC = [...majors];
-            if (rcVersion !== undefined) {
-                majorsAndRC.push(rcVersion);
-            }
-            core.info(`majorsAndRC: ${majorsAndRC.join(', ')}`);
-            core.setOutput('majorsAndRC', JSON.stringify(majorsAndRC));
-            const minors = lastVersionByNumber_1.lastVersionByNumber(all, 3);
-            core.info(`minors: ${minors.join(', ')}`);
-            core.setOutput('minors', JSON.stringify(minors));
-            const minorsAndRC = [...minors];
-            if (rcVersion !== undefined) {
-                minorsAndRC.push(rcVersion);
-            }
-            core.info(`minorsAndRC: ${minorsAndRC.join(', ')}`);
-            core.setOutput('minorsAndRC', JSON.stringify(minorsAndRC));
-        }
-        finally {
-            httpClient.dispose();
-        }
+        const minVersion = Version_1.Version.parse(core.getInput('min'));
+        const maxVersion = Version_1.Version.parse(core.getInput('max'));
+        const versions = await retriever_1.retrieveGradleVersions(minVersion, maxVersion);
+        core.info(`all: ${versions.all.join(', ')}`);
+        core.setOutput('all', JSON.stringify(versions.all));
+        core.info(`allAndRC: ${versions.allAndRC.join(', ')}`);
+        core.setOutput('allAndRC', JSON.stringify(versions.allAndRC));
+        core.info(`majors: ${versions.majors.join(', ')}`);
+        core.setOutput('majors', JSON.stringify(versions.majors));
+        core.info(`majorsAndRC: ${versions.majorsAndRC.join(', ')}`);
+        core.setOutput('majorsAndRC', JSON.stringify(versions.majorsAndRC));
+        core.info(`minors: ${versions.minors.join(', ')}`);
+        core.setOutput('minors', JSON.stringify(versions.minors));
+        core.info(`minorsAndRC: ${versions.minorsAndRC.join(', ')}`);
+        core.setOutput('minorsAndRC', JSON.stringify(versions.minorsAndRC));
     }
     catch (error) {
         core.setFailed(error);
