@@ -151,6 +151,10 @@ export function compareVersions(version1: Version, version2: Version): number {
     return version1.compareTo(version2)
 }
 
+export function compareVersionsDesc(version1: Version, version2: Version): number {
+    return -1 * compareVersions(version1, version2)
+}
+
 
 export const VERSION_REGEX = /^(?<numbers>\d+(\.\d+)*)(?<suffix>[-.+_a-z0-9]*)$/i
 
