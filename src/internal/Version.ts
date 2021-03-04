@@ -124,6 +124,10 @@ export class Version {
         return this._suffixTokens.find(token => typeof token === 'string') !== undefined
     }
 
+    get isRelease(): boolean {
+        return !this.hasSuffix || getTokensOrder(this._suffixTokens) >= getTokensOrder(['release'])
+    }
+
     get isSnapshot(): boolean {
         return getTokensOrder(this._suffixTokens) === getTokensOrder(['snapshot'])
     }
