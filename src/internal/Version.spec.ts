@@ -99,6 +99,15 @@ describe('Version', () => {
         expect(new Version('1-token')).toHaveProperty('hasSuffix', true)
     })
 
+    it('isRelease', () => {
+        expect(new Version('1')).toHaveProperty('isRelease', true)
+        expect(new Version('1-release')).toHaveProperty('isRelease', true)
+        expect(new Version('1-r')).toHaveProperty('isRelease', true)
+        expect(new Version('1-final')).toHaveProperty('isRelease', true)
+        expect(new Version('1-ga')).toHaveProperty('isRelease', true)
+        expect(new Version('1-sp')).toHaveProperty('isRelease', true)
+    })
+
     it('isSnapshot', () => {
         expect(new Version('1')).toHaveProperty('isSnapshot', false)
         expect(new Version('1-SNAPSHOT')).toHaveProperty('isSnapshot', true)

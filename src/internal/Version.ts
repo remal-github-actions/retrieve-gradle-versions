@@ -124,6 +124,10 @@ export class Version {
         return this._suffixTokens.find(token => typeof token === 'string') !== undefined
     }
 
+    get isRelease(): boolean {
+        return !this.hasSuffix || getTokensOrder(this._suffixTokens) >= getTokensOrder(['release'])
+    }
+
     get isSnapshot(): boolean {
         return getTokensOrder(this._suffixTokens) === getTokensOrder(['snapshot'])
     }
@@ -149,6 +153,10 @@ export class Version {
 
 export function compareVersions(version1: Version, version2: Version): number {
     return version1.compareTo(version2)
+}
+
+export function compareVersionsDesc(version1: Version, version2: Version): number {
+    return -1 * compareVersions(version1, version2)
 }
 
 
