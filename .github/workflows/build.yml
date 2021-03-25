@@ -56,7 +56,7 @@ jobs:
     - name: Run current action
       uses: ./
       with:
-        min: 2.1
+        min: 0.9
 
 
     - name: Push back

@@ -11,6 +11,7 @@ export interface GradleVersions {
     majorsAndRC: readonly Version[]
     minors: readonly Version[]
     minorsAndRC: readonly Version[]
+    activeRC: Version | undefined
 }
 
 const timeoutBetweenRetries = process.env.NODE_ENV !== 'test' ? 5_000 : 0
@@ -74,7 +75,7 @@ export async function retrieveGradleVersions(
 
             if (minVersion || maxVersion) {
                 const filter: (string) => boolean = version => {
-                    version = version.split('-')[0]
+                    version = version.withoutSuffix()
                     if (minVersion && minVersion.compareTo(version) > 0) {
                         return false
                     }
@@ -124,7 +125,8 @@ export async function retrieveGradleVersions(
                 majors,
                 majorsAndRC,
                 minors,
-                minorsAndRC
+                minorsAndRC,
+                activeRC: rcVersion
             }
         })
         .finally(() => httpClient.dispose())

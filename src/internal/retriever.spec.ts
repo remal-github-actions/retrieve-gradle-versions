@@ -131,6 +131,68 @@ describe('retriever', () => {
                 expect(versions.minorsAndRC).toStrictEqual(versions.minors.concat([
                     new Version('7.0-rc-2'),
                 ]))
+                expect(versions.activeRC).toStrictEqual(new Version('7.0-rc-2'))
+            })
+    })
+
+    it('min & Max', () => {
+        nock('https://services.gradle.org').persist()
+            .get('/versions/all')
+            .reply(200, JSON.stringify([
+                {
+                    "version": "6.8.3",
+                    "current": true,
+                    "snapshot": false,
+                    "nightly": false,
+                    "releaseNightly": false,
+                    "activeRc": false,
+                    "rcFor": "",
+                    "milestoneFor": "",
+                    "broken": false,
+                },
+                {
+                    "version": "6.8.2",
+                    "current": false,
+                    "snapshot": false,
+                    "nightly": false,
+                    "releaseNightly": false,
+                    "activeRc": false,
+                    "rcFor": "",
+                    "milestoneFor": "",
+                    "broken": false,
+                },
+                {
+                    "version": "6.8.1",
+                    "current": false,
+                    "snapshot": false,
+                    "nightly": false,
+                    "releaseNightly": false,
+                    "activeRc": false,
+                    "rcFor": "",
+                    "milestoneFor": "",
+                    "broken": false,
+                },
+                {
+                    "version": "6.8.0",
+                    "current": false,
+                    "snapshot": false,
+                    "nightly": false,
+                    "releaseNightly": false,
+                    "activeRc": false,
+                    "rcFor": "",
+                    "milestoneFor": "",
+                    "broken": false,
+                },
+            ]))
+
+        const min = Version.parse('6.8.1')
+        const max = Version.parse('6.8.2')
+        return retrieveGradleVersions(min, max)
+            .then(versions => {
+                expect(versions.all).toStrictEqual([
+                    new Version('6.8.2'),
+                    new Version('6.8.1'),
+                ])
             })
     })
 

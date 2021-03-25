@@ -371,7 +371,7 @@ async function retrieveGradleVersions(minVersion, maxVersion) {
         }
         if (minVersion || maxVersion) {
             const filter = version => {
-                version = version.split('-')[0];
+                version = version.withoutSuffix();
                 if (minVersion && minVersion.compareTo(version) > 0) {
                     return false;
                 }
@@ -415,7 +415,8 @@ async function retrieveGradleVersions(minVersion, maxVersion) {
             majors,
             majorsAndRC,
             minors,
-            minorsAndRC
+            minorsAndRC,
+            activeRC: rcVersion
         };
     })
         .finally(() => httpClient.dispose());

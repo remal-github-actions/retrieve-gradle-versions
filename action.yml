@@ -22,6 +22,8 @@ outputs:
     description: JSON array of last patch version of every matched Gradle minor versions
   minorsAndRC:
     description: JSON array of last patch version of every matched Gradle minor versions plus active RC version
+  activeRC:
+    description: Active Release Candidate version
 
 runs:
   using: node12
