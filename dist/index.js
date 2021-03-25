@@ -397,17 +397,17 @@ async function retrieveGradleVersions(minVersion, maxVersion) {
         const all = [...releaseVersions];
         const allAndRC = [...all];
         if (rcVersion !== undefined) {
-            allAndRC.push(rcVersion);
+            allAndRC.unshift(rcVersion);
         }
         const majors = lastVersionByNumber_1.lastVersionByNumber(all, 2);
         const majorsAndRC = [...majors];
         if (rcVersion !== undefined) {
-            majorsAndRC.push(rcVersion);
+            majorsAndRC.unshift(rcVersion);
         }
         const minors = lastVersionByNumber_1.lastVersionByNumber(all, 3);
         const minorsAndRC = [...minors];
         if (rcVersion !== undefined) {
-            minorsAndRC.push(rcVersion);
+            minorsAndRC.unshift(rcVersion);
         }
         return {
             all,

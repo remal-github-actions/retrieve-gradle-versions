@@ -111,26 +111,27 @@ describe('retriever', () => {
                     new Version('6.7'),
                     new Version('5.10'),
                 ])
-                expect(versions.allAndRC).toStrictEqual(versions.all.concat([
+                expect(versions.allAndRC).toStrictEqual([
                     new Version('7.0-rc-2'),
-                ]))
+                ].concat(versions.all))
 
                 expect(versions.majors).toStrictEqual([
                     new Version('6.8.3'),
                     new Version('5.10'),
                 ])
-                expect(versions.majorsAndRC).toStrictEqual(versions.majors.concat([
+                expect(versions.majorsAndRC).toStrictEqual([
                     new Version('7.0-rc-2'),
-                ]))
+                ].concat(versions.majors))
 
                 expect(versions.minors).toStrictEqual([
                     new Version('6.8.3'),
                     new Version('6.7'),
                     new Version('5.10'),
                 ])
-                expect(versions.minorsAndRC).toStrictEqual(versions.minors.concat([
+                expect(versions.minorsAndRC).toStrictEqual([
                     new Version('7.0-rc-2'),
-                ]))
+                ].concat(versions.minors))
+
                 expect(versions.activeRC).toStrictEqual(new Version('7.0-rc-2'))
             })
     })
