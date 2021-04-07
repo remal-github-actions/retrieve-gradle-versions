@@ -16,7 +16,13 @@ async function run(): Promise<void> {
                 // skip NULLs
             } else if (Array.isArray(value)) {
                 core.info(`${key}: ${value.join(', ')}`)
-                core.setOutput(key, JSON.stringify(value))
+                core.setOutput(key, JSON.stringify(value, (__, obj) => {
+                    if (obj instanceof Version) {
+                        return obj.toString()
+                    } else {
+                        return obj
+                    }
+                }))
             } else {
                 core.info(`${key}: ${value}`)
                 core.setOutput(key, value.toString())
