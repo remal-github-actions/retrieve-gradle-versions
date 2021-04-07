@@ -54,9 +54,21 @@ jobs:
 
 
     - name: Run current action
+      id: current
       uses: ./
       with:
         min: 0.9
+
+    - name: Validate current action
+      env:
+        OUTPUT: ${{ steps.current.outputs.all }}
+      run: |
+        if [ "${{ contains(fromJSON(env.OUTPUT), '6.2.1') }}" == "true" ]; then
+          echo "Valid"
+        else
+          echo "::error Current action output doesn't contain '6.2.1': $OUTPUT"
+          exit 1
+        fi
 
 
     - name: Push back
