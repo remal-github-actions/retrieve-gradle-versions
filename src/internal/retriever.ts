@@ -17,8 +17,9 @@ export interface GradleVersions {
 const timeoutBetweenRetries = process.env.NODE_ENV !== 'test' ? 5_000 : 0
 
 export async function retrieveGradleVersions(
-    minVersion?: Version,
-    maxVersion?: Version
+    minVersions: Version[] = [],
+    maxVersions: Version[] = [],
+    excludedVersions: Version[] = []
 ): Promise<GradleVersions> {
     const httpClient = new HttpClient()
     return retry(
@@ -73,20 +74,21 @@ export async function retrieveGradleVersions(
                 releaseVersions.push(version)
             }
 
-            if (minVersion || maxVersion) {
-                const filter: (string) => boolean = version => {
-                    version = version.withoutSuffix()
-                    if (minVersion && minVersion.compareTo(version) > 0) {
-                        return false
-                    }
-                    if (maxVersion && maxVersion.compareTo(version) < 0) {
-                        return false
-                    }
-                    return true
+            const filter: (string) => boolean = version => {
+                version = version.withoutSuffix()
+                if (minVersions.some(minVersion => minVersion.compareTo(version) > 0)) {
+                    return false
                 }
-                rcVersions = rcVersions.filter(filter)
-                releaseVersions = releaseVersions.filter(filter)
+                if (maxVersions.some(maxVersion => maxVersion.compareTo(version) < 0)) {
+                    return false
+                }
+                if (excludedVersions.some(excludedVersion => excludedVersion.compareTo(version) == 0)) {
+                    return false
+                }
+                return true
             }
+            rcVersions = rcVersions.filter(filter)
+            releaseVersions = releaseVersions.filter(filter)
 
             rcVersions.sort(compareVersionsDesc)
             releaseVersions.sort(compareVersionsDesc)

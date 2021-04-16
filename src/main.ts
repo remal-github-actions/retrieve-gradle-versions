@@ -6,10 +6,25 @@ import {Version} from './internal/Version'
 
 async function run(): Promise<void> {
     try {
-        const minVersion = Version.parse(core.getInput('min'))
-        const maxVersion = Version.parse(core.getInput('max'))
+        const minVersions = core.getInput('min').split(/[,;]/)
+            .map(it => it.trim())
+            .filter(it => it.length)
+            .map(Version.parse)
+            .filter(it => it != null) as Version[]
 
-        const versions = await retrieveGradleVersions(minVersion, maxVersion)
+        const maxVersions = core.getInput('min').split(/[,;]/)
+            .map(it => it.trim())
+            .filter(it => it.length)
+            .map(Version.parse)
+            .filter(it => it != null) as Version[]
+
+        const excludedVersions = core.getInput('exclude').split(/[,;]/)
+            .map(it => it.trim())
+            .filter(it => it.length)
+            .map(Version.parse)
+            .filter(it => it != null) as Version[]
+
+        const versions = await retrieveGradleVersions(minVersions, maxVersions, excludedVersions)
 
         Object.entries(versions).forEach(([key, value]) => {
             if (value == null) {

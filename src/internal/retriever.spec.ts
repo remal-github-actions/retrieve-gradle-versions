@@ -136,13 +136,24 @@ describe('retriever', () => {
             })
     })
 
-    it('min & Max', () => {
+    it('min, max, excluded', () => {
         nock('https://services.gradle.org').persist()
             .get('/versions/all')
             .reply(200, JSON.stringify([
                 {
-                    "version": "6.8.3",
+                    "version": "6.8.4",
                     "current": true,
+                    "snapshot": false,
+                    "nightly": false,
+                    "releaseNightly": false,
+                    "activeRc": false,
+                    "rcFor": "",
+                    "milestoneFor": "",
+                    "broken": false,
+                },
+                {
+                    "version": "6.8.3",
+                    "current": false,
                     "snapshot": false,
                     "nightly": false,
                     "releaseNightly": false,
@@ -186,12 +197,13 @@ describe('retriever', () => {
                 },
             ]))
 
-        const min = Version.parse('6.8.1')
-        const max = Version.parse('6.8.2')
-        return retrieveGradleVersions(min, max)
+        const min = Version.parse('6.8.1')!
+        const max = Version.parse('6.8.3')!
+        const excluded = Version.parse('6.8.2')!
+        return retrieveGradleVersions([min], [max], [excluded])
             .then(versions => {
                 expect(versions.all).toStrictEqual([
-                    new Version('6.8.2'),
+                    new Version('6.8.3'),
                     new Version('6.8.1'),
                 ])
             })

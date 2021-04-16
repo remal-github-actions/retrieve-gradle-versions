@@ -8,6 +8,9 @@ inputs:
   max:
     required: false
     description: Maximum Gradle version
+  exclude:
+    required: false
+    description: Gradle version to exclude
 
 outputs:
   all:
