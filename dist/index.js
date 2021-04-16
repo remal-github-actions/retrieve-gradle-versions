@@ -325,7 +325,7 @@ const ts_retry_promise_1 = __nccwpck_require__(711);
 const lastVersionByNumber_1 = __nccwpck_require__(716);
 const Version_1 = __nccwpck_require__(195);
 const timeoutBetweenRetries = process.env.NODE_ENV !== 'test' ? 5000 : 0;
-async function retrieveGradleVersions(minVersion, maxVersion) {
+async function retrieveGradleVersions(minVersions = [], maxVersions = [], excludedVersions = []) {
     const httpClient = new http_client_1.HttpClient();
     return ts_retry_promise_1.retry(() => httpClient.getJson('https://services.gradle.org/versions/all', {
         Accept: 'application/json',
@@ -368,20 +368,21 @@ async function retrieveGradleVersions(minVersion, maxVersion) {
             }
             releaseVersions.push(version);
         }
-        if (minVersion || maxVersion) {
-            const filter = version => {
-                version = version.withoutSuffix();
-                if (minVersion && minVersion.compareTo(version) > 0) {
-                    return false;
-                }
-                if (maxVersion && maxVersion.compareTo(version) < 0) {
-                    return false;
-                }
-                return true;
-            };
-            rcVersions = rcVersions.filter(filter);
-            releaseVersions = releaseVersions.filter(filter);
-        }
+        const filter = version => {
+            version = version.withoutSuffix();
+            if (minVersions.some(minVersion => minVersion.compareTo(version) > 0)) {
+                return false;
+            }
+            if (maxVersions.some(maxVersion => maxVersion.compareTo(version) < 0)) {
+                return false;
+            }
+            if (excludedVersions.some(excludedVersion => excludedVersion.compareTo(version) == 0)) {
+                return false;
+            }
+            return true;
+        };
+        rcVersions = rcVersions.filter(filter);
+        releaseVersions = releaseVersions.filter(filter);
         rcVersions.sort(Version_1.compareVersionsDesc);
         releaseVersions.sort(Version_1.compareVersionsDesc);
         const rcVersion = (function () {
@@ -456,9 +457,22 @@ const Version_1 = __nccwpck_require__(195);
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 async function run() {
     try {
-        const minVersion = Version_1.Version.parse(core.getInput('min'));
-        const maxVersion = Version_1.Version.parse(core.getInput('max'));
-        const versions = await retriever_1.retrieveGradleVersions(minVersion, maxVersion);
+        const minVersions = core.getInput('min').split(/[,;]/)
+            .map(it => it.trim())
+            .filter(it => it.length)
+            .map(Version_1.Version.parse)
+            .filter(it => it != null);
+        const maxVersions = core.getInput('max').split(/[,;]/)
+            .map(it => it.trim())
+            .filter(it => it.length)
+            .map(Version_1.Version.parse)
+            .filter(it => it != null);
+        const excludedVersions = core.getInput('exclude').split(/[,;]/)
+            .map(it => it.trim())
+            .filter(it => it.length)
+            .map(Version_1.Version.parse)
+            .filter(it => it != null);
+        const versions = await retriever_1.retrieveGradleVersions(minVersions, maxVersions, excludedVersions);
         Object.entries(versions).forEach(([key, value]) => {
             if (value == null) {
                 // skip NULLs
