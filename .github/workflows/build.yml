@@ -64,21 +64,15 @@ jobs:
       env:
         OUTPUT: ${{ steps.current.outputs.all }}
       run: |
-        if [ "${{ contains(fromJSON(env.OUTPUT), '6.2.1') }}" == "true" ]; then
-          echo "Valid"
-        else
+        if [ "${{ contains(fromJSON(env.OUTPUT), '6.2.1') }}" != "true" ]; then
           echo "::error Current action output doesn't contain '6.2.1': $OUTPUT"
           exit 1
         fi
-        if [ "${{ contains(fromJSON(env.OUTPUT), '0.8') }}" == "false" ]; then
-          echo "Valid"
-        else
+        if [ "${{ contains(fromJSON(env.OUTPUT), '0.8') }}" != "false" ]; then
           echo "::error Current action output contains excluded '0.8': $OUTPUT"
           exit 1
         fi
-        if [ "${{ contains(fromJSON(env.OUTPUT), '6.2') }}" == "false" ]; then
-          echo "Valid"
-        else
+        if [ "${{ contains(fromJSON(env.OUTPUT), '6.2') }}" != "false" ]; then
           echo "::error Current action output contains excluded '6.2': $OUTPUT"
           exit 1
         fi
