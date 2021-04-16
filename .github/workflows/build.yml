@@ -57,7 +57,8 @@ jobs:
       id: current
       uses: ./
       with:
-        min: 0.9
+        min: 0.8, 0.9
+        exclude: 6.2
 
     - name: Validate current action
       env:
@@ -67,6 +68,12 @@ jobs:
           echo "Valid"
         else
           echo "::error Current action output doesn't contain '6.2.1': $OUTPUT"
+          exit 1
+        fi
+        if [ "${{ contains(fromJSON(env.OUTPUT), '6.2') }}" == "false" ]; then
+          echo "Valid"
+        else
+          echo "::error Current action output contains excluded '6.2': $OUTPUT"
           exit 1
         fi
 
