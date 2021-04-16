@@ -58,6 +58,7 @@ jobs:
       uses: ./
       with:
         min: 0.8, 0.9
+        max: 6.7
         exclude: 6.2
 
     - name: Validate current action
@@ -70,6 +71,10 @@ jobs:
         fi
         if [ "${{ contains(fromJSON(env.OUTPUT), '0.8') }}" != "false" ]; then
           echo "::error Current action output contains excluded '0.8': $OUTPUT"
+          exit 1
+        fi
+        if [ "${{ contains(fromJSON(env.OUTPUT), '6.8') }}" != "false" ]; then
+          echo "::error Current action output contains excluded '6.8': $OUTPUT"
           exit 1
         fi
         if [ "${{ contains(fromJSON(env.OUTPUT), '6.2') }}" != "false" ]; then
