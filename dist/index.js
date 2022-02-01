@@ -2004,6 +2004,9 @@ exports.NotRetryableError = NotRetryableError;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.timeout = void 0;
 exports.timeout = function (millies, f) {
+    if (millies === "INFINITELY") {
+        return f(function () { return false; });
+    }
     var done = false;
     var doneF = function () { return done; };
     return new Promise(function (resolve, reject) {
