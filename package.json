@@ -15,7 +15,7 @@
     "build": "npm run dist && npm run test"
   },
   "dependencies": {
-    "@actions/core": "1.6.0",
+    "@actions/core": "1.7.0",
     "@actions/http-client": "1.0.11",
     "ts-retry-promise": "0.6.1"
   },
