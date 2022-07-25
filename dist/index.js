@@ -2310,6 +2310,7 @@ exports.defaultRetryConfig = {
     retries: 10,
     timeout: 60 * 1000,
     until: function () { return true; },
+    retryIf: function () { return true; }
 };
 function wait(ms) {
     return __awaiter(this, void 0, void 0, function () {
@@ -2393,6 +2394,9 @@ function _retry(f, config, done) {
                     return [3 /*break*/, 5];
                 case 4:
                     error_1 = _a.sent();
+                    if (!config.retryIf(error_1)) {
+                        throw error_1;
+                    }
                     if (error_1.name === NotRetryableError.name) {
                         throw new RetryError("Met not retryable error. Last error: " + error_1, error_1);
                     }
