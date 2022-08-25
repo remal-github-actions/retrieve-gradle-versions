@@ -53,6 +53,9 @@ jobs:
         npm run build
 
 
+    # $$$sync-with-template-modifiable: validation $$$
+
+
     - name: Run current action
       id: current
       uses: ./
@@ -66,21 +69,24 @@ jobs:
         OUTPUT: ${{ steps.current.outputs.all }}
       run: |
         if [ "${{ contains(fromJSON(env.OUTPUT), '6.2.1') }}" != "true" ]; then
-          echo "::error Current action output doesn't contain '6.2.1': $OUTPUT"
+          echo "::error::Current action output doesn't contain '6.2.1': $OUTPUT"
           exit 1
         fi
         if [ "${{ contains(fromJSON(env.OUTPUT), '0.8') }}" != "false" ]; then
-          echo "::error Current action output contains excluded '0.8': $OUTPUT"
+          echo "::error::Current action output contains excluded '0.8': $OUTPUT"
           exit 1
         fi
         if [ "${{ contains(fromJSON(env.OUTPUT), '6.8') }}" != "false" ]; then
-          echo "::error Current action output contains excluded '6.8': $OUTPUT"
+          echo "::error::Current action output contains excluded '6.8': $OUTPUT"
           exit 1
         fi
         if [ "${{ contains(fromJSON(env.OUTPUT), '6.2') }}" != "false" ]; then
-          echo "::error Current action output contains excluded '6.2': $OUTPUT"
+          echo "::error::Current action output contains excluded '6.2': $OUTPUT"
           exit 1
         fi
+
+
+    # $$$sync-with-template-modifiable-end$$$
 
 
     - name: Push back
