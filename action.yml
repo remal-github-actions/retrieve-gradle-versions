@@ -29,5 +29,5 @@ outputs:
     description: Active Release Candidate version
 
 runs:
-  using: node12
+  using: node16
   main: 'dist/index.js'
