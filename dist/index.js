@@ -300,7 +300,11 @@ exports.lastVersionByNumber = lastVersionByNumber;
 
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -327,7 +331,7 @@ const Version_1 = __nccwpck_require__(195);
 const timeoutBetweenRetries = process.env.NODE_ENV !== 'test' ? 5000 : 0;
 async function retrieveGradleVersions(minVersions = [], maxVersions = [], excludedVersions = []) {
     const httpClient = new http_client_1.HttpClient();
-    return ts_retry_promise_1.retry(() => httpClient.getJson('https://services.gradle.org/versions/all', {
+    return (0, ts_retry_promise_1.retry)(() => httpClient.getJson('https://services.gradle.org/versions/all', {
         Accept: 'application/json',
         'Accept-Encoding': 'identity',
     })
@@ -399,12 +403,12 @@ async function retrieveGradleVersions(minVersions = [], maxVersions = [], exclud
         if (rcVersion !== undefined) {
             allAndRC.unshift(rcVersion);
         }
-        const majors = lastVersionByNumber_1.lastVersionByNumber(all, 2);
+        const majors = (0, lastVersionByNumber_1.lastVersionByNumber)(all, 2);
         const majorsAndRC = [...majors];
         if (rcVersion !== undefined) {
             majorsAndRC.unshift(rcVersion);
         }
-        const minors = lastVersionByNumber_1.lastVersionByNumber(all, 3);
+        const minors = (0, lastVersionByNumber_1.lastVersionByNumber)(all, 3);
         const minorsAndRC = [...minors];
         if (rcVersion !== undefined) {
             minorsAndRC.unshift(rcVersion);
@@ -433,7 +437,11 @@ exports.retrieveGradleVersions = retrieveGradleVersions;
 
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -472,7 +480,7 @@ async function run() {
             .filter(it => it.length)
             .map(Version_1.Version.parse)
             .filter(it => it != null);
-        const versions = await retriever_1.retrieveGradleVersions(minVersions, maxVersions, excludedVersions);
+        const versions = await (0, retriever_1.retrieveGradleVersions)(minVersions, maxVersions, excludedVersions);
         Object.entries(versions).forEach(([key, value]) => {
             if (value == null) {
                 // skip NULLs
