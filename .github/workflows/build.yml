@@ -84,7 +84,6 @@ jobs:
 
     # $$$sync-with-template-modifiable: validation $$$
 
-
     - name: Run current action
       id: current
       uses: ./
@@ -113,7 +112,6 @@ jobs:
           echo "::error::Current action output contains excluded '6.2': $OUTPUT"
           exit 1
         fi
-
 
     # $$$sync-with-template-modifiable-end$$$
 
